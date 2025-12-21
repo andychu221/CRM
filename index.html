@@ -1,0 +1,2802 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Application V31 Enhanced</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Quill Libraries -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <!-- File Parsing Libraries for Real Preview -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+
+    <!-- Icons & Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Material+Icons" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Modern Warm Style */
+            --bg-gradient: linear-gradient(180deg, #fdfbf7 0%, #fffef0 100%);
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            
+            /* Tabs */
+            --tab-active-bg: #ffffff;
+            --tab-inactive-bg: #f8fafc;
+            --tab-inactive-text: #64748b;
+            
+            --primary-color: #eab308;
+            --accent-blue: #3b82f6;
+            
+            --status-green: #10b981;
+            --status-gray: #e5e7eb;
+            --status-blue: #3b82f6;
+            --status-red: #ef4444;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+            overflow-y: hidden; 
+        }
+
+        /* --- Layout --- */
+        .app-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* --- Header --- */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 10px;
+            margin-bottom: 0;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            margin-right: 40px;
+        }
+        .brand-icon {
+            background: #fef08a;
+            color: #854d0e;
+            padding: 6px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Tabs --- */
+        .nav-tabs {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-tab {
+            padding: 8px 20px;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--tab-inactive-text);
+            background: var(--tab-inactive-bg); 
+            border: 1px solid transparent; 
+            position: relative;
+            top: 1px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .nav-tab:hover {
+            background: #cbd5e1;
+            color: #1e293b;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #111;
+            border: 1px solid #d1d5db;
+            border-bottom: 1px solid white;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+        
+        .nav-tab.active::before {
+            content: '';
+            position: absolute;
+            top: -3px; left: 0; right: 0;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* --- Main Content --- */
+        #main-content {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0 12px 12px 12px;
+            box-shadow: var(--shadow-sm);
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .view-section {
+            padding: 24px;
+            height: 100%;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .view-section.active { 
+            display: block; 
+            animation: slideUpFade 0.4s ease-out;
+        }
+        
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- User Profile & Settings --- */
+        .user-area-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .settings-btn {
+            color: #6b7280;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        .settings-btn:hover { background: #f3f4f6; color: #111; }
+
+        .user-container { position: relative; }
+        .avatar {
+            width: 36px; height: 36px;
+            background: #374151; color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 600; cursor: pointer;
+            box-shadow: var(--shadow-md);
+            border: 2px solid white;
+        }
+        .role-badge {
+            position: absolute; bottom: -4px; right: -4px;
+            background: var(--primary-color); color: white;
+            font-size: 10px; padding: 2px 5px;
+            border-radius: 10px; border: 1px solid white;
+        }
+        .dropdown-menu {
+            position: absolute; top: 110%; right: 0;
+            background: white; border-radius: 8px;
+            box-shadow: var(--shadow-md); width: 180px;
+            border: 1px solid #e5e7eb; display: none; z-index: 50;
+        }
+        .dropdown-menu.show { display: block; }
+        .dropdown-item {
+            padding: 10px; font-size: 0.9rem; cursor: pointer;
+            display: flex; justify-content: space-between;
+        }
+        .dropdown-item:hover { background: #f9fafb; }
+        .dropdown-item.active { background: #fefce8; color: #854d0e; }
+
+        /* --- Notebook Cards --- */
+        .notebook-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .notebook-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+            position: relative;
+        }
+        .notebook-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: #d1d5db;
+        }
+        .notebook-card.active-turn {
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+        }
+
+        .notebook-card.returned {
+            background: #fff5f5; 
+            border-color: #fecaca;
+        }
+        .notebook-card.returned:hover {
+            background: #fff1f2;
+            border-color: #fca5a5;
+        }
+
+        .notebook-card.new-request {
+            border: 2px dashed #e5e7eb;
+            align-items: center; justify-content: center;
+            color: #9ca3af;
+            min-height: 200px;
+            background: white;
+        }
+        .notebook-card.new-request:hover {
+            border-color: var(--accent-blue); color: var(--accent-blue);
+            background: #eff6ff;
+        }
+
+        .card-delete-btn {
+            position: absolute;
+            top: 10px; right: 10px;
+            color: #d1d5db;
+            padding: 4px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            z-index: 5;
+        }
+        .card-delete-btn:hover { color: #ef4444; background: #fef2f2; }
+
+        .card-progress-area {
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid #f3f4f6;
+            position: relative;
+        }
+        .notebook-card.returned .card-progress-area { border-top-color: #fee2e2; }
+
+        .next-approver-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+            text-align: right;
+            font-weight: 600;
+            height: 16px;
+        }
+
+        .progress-bars { display: flex; gap: 4px; height: 6px; margin-bottom: 2px; }
+        .p-bar { flex: 1; background: #e5e7eb; border-radius: 4px; }
+        .p-bar.done { background: var(--status-green); }
+        .p-bar.active { background: var(--status-blue); }
+        .p-bar.rejected { background: var(--status-red); }
+
+        /* --- Request Detail Layout --- */
+        .detail-layout { display: flex; height: 100%; background: #fff; position: relative; overflow: hidden; }
+        
+        .detail-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
+        }
+        .detail-toolbar {
+            padding: 12px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+        .detail-content {
+            padding: 30px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        /* Sidebar & Resizer */
+        .sidebar-resizer {
+            width: 12px;
+            background: #f3f4f6;
+            cursor: col-resize;
+            border-left: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            transition: background 0.2s;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .sidebar-resizer:hover, .sidebar-resizer.resizing { background: #dbeafe; }
+        
+        .sidebar-toggle-divider {
+            width: 20px;
+            height: 40px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #6b7280;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 30;
+        }
+        .sidebar-toggle-divider:hover { color: #111; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        .detail-sidebar {
+            width: 380px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width 0.1s;
+            position: relative;
+        }
+        .detail-sidebar.collapsed { width: 0 !important; border:none; }
+        .detail-sidebar.collapsed .sidebar-header,
+        .detail-sidebar.collapsed .workflow-wrapper,
+        .detail-sidebar.collapsed .action-area { display: none; }
+        
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 700;
+            color: #374151;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 50px;
+            flex-shrink: 0;
+        }
+
+        .workflow-wrapper {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .workflow-content { 
+            padding: 20px; 
+            overflow-y: auto; 
+            flex-grow: 1;
+        }
+        
+        .sidebar-vertical-resizer {
+            height: 8px;
+            background: #f3f4f6;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: row-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+        .sidebar-vertical-resizer:hover { background: #e5e7eb; }
+        .sidebar-vertical-resizer::after {
+            content: '';
+            width: 40px; height: 3px; background: #cbd5e1; border-radius: 2px;
+        }
+
+        /* Workflow Item */
+        .wf-item { margin-bottom: 20px; display: flex; gap: 12px; position: relative; transition: all 0.3s;}
+        .wf-item.dragging { opacity: 0.5; background: #f0f9ff; }
+        .wf-icon { margin-top: 4px; }
+        .wf-details { flex: 1; }
+        .wf-role { font-weight: 700; font-size: 0.95rem; color: #111; display: flex; align-items: center; justify-content: space-between; }
+        .wf-meta { font-size: 0.85rem; color: #555; }
+        .wf-time { font-size: 0.75rem; color: #888; }
+        .wf-comment {
+            margin-top: 4px; padding: 8px; background: #fefce8;
+            border: 1px solid #fef08a; border-radius: 6px;
+            font-size: 0.85rem; font-style: italic; color: #854d0e;
+        }
+        .delegation-btn {
+            font-size: 0.75rem; color: var(--accent-blue); cursor: pointer; text-decoration: underline; margin-left: 8px;
+        }
+        .delegation-btn:hover { color: #1d4ed8; }
+        .wf-control-btn {
+            color: #9ca3af; cursor: pointer; font-size: 16px; margin-left: 5px;
+        }
+        .wf-control-btn:hover { color: #111; }
+        .wf-delete-btn:hover { color: #ef4444; }
+
+        /* Action Area */
+        .action-area {
+            background: #f9fafb;
+            padding: 16px;
+            flex-shrink: 0;
+        }
+
+        /* --- Paper Form Style --- */
+        .paper-form {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            color: #1f2937;
+            font-family: 'Inter', sans-serif;
+            box-shadow: var(--shadow-md);
+        }
+        .paper-form-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+            color: #111;
+        }
+        .paper-header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            align-items: center;
+        }
+        .paper-header-row input {
+            border: 1px solid transparent;
+            background: transparent;
+            font-weight: normal;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            width: auto;
+            min-width: 150px;
+        }
+        .paper-header-row input:focus {
+             background: #eff6ff; border-color: #bfdbfe; outline: none;
+        }
+        .paper-header-row input[readonly] {
+            cursor: default;
+        }
+        
+        .paper-section {
+            border: 1px solid #d1d5db;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .paper-section-header {
+            background: #f3f4f6;
+            padding: 8px 12px;
+            font-weight: 600;
+            border-bottom: 1px solid #d1d5db;
+            font-size: 0.9rem;
+            color: #374151;
+            text-transform: capitalize;
+        }
+        
+        .paper-grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
+        .paper-col { padding: 0; }
+        .paper-col:first-child { border-right: 1px solid #d1d5db; }
+        
+        .paper-field-row { display: flex; border-bottom: 1px solid #e5e7eb; }
+        .paper-field-row:last-child { border-bottom: none; }
+        
+        .paper-label {
+            width: 160px; padding: 8px 12px; font-weight: 600; font-size: 0.85rem;
+            background: #f9fafb; border-right: 1px solid #e5e7eb; flex-shrink: 0; color: #4b5563;
+        }
+        .paper-value {
+            padding: 8px 12px; flex: 1; font-size: 0.9rem; display: flex; align-items: center; position: relative;
+        }
+        .paper-value input, .paper-value select {
+            width: 100%; border: 1px solid transparent; outline: none; background: transparent; 
+            font-family: inherit; font-size: inherit; padding: 2px;
+            border-radius: 4px; transition: all 0.2s;
+        }
+        .paper-value input:focus, .paper-value select:focus { background: #eff6ff; border-color: #bfdbfe; }
+        .paper-value.highlight { background: #fffbeb; }
+        
+        /* Quill Wrapper and Expand Button */
+        .editor-wrapper { position: relative; }
+        .editor-expand-btn {
+            position: absolute;
+            top: 6px; right: 6px;
+            width: 24px; height: 24px;
+            display: none; /* hidden by default, shown via JS if editable */
+            align-items: center; justify-content: center;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .editor-expand-btn:hover { background: #f3f4f6; color: #111; }
+        .resizable-editor .editor-expand-btn { top: 4px; right: 4px; }
+
+        .paper-editor { min-height: 100px; padding: 10px; font-family: inherit; }
+        
+        .editor-wrapper.readonly .ql-toolbar { display: none; }
+        .editor-wrapper.readonly .ql-container { border: none !important; }
+        .editor-wrapper.readonly .paper-editor { padding: 0; }
+
+        .ql-container { font-family: 'Inter', sans-serif !important; font-size: 0.9rem !important; }
+        .ql-toolbar { border-color: #d1d5db !important; background: #f9fafb; }
+        .ql-container { border-color: #d1d5db !important; }
+        
+        .mcap-container { display: flex; width: 100%; gap: 4px; }
+        .mcap-cell {
+            flex: 1; background: #f3f4f6; padding: 6px; border-radius: 4px; text-align: center; position: relative;
+        }
+        .mcap-label { font-size: 10px; color: #666; display: block; margin-bottom: 2px;}
+        .mcap-val { font-weight: 600; font-size: 12px;}
+
+        /* Internal Tabs */
+        .internal-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .internal-tab {
+            padding: 8px 20px; border-radius: 8px 8px 0 0; cursor: pointer;
+            color: #6b7280; font-weight: 500; border: 1px solid transparent;
+            margin-bottom: -1px; background: #f3f4f6;
+        }
+        .internal-tab.active {
+            background: white; color: #111; border: 1px solid #e5e7eb;
+            border-bottom: 1px solid white; font-weight: 600;
+        }
+        .internal-pane { display: none; }
+        .internal-pane.active { display: block; animation: fadeIn 0.3s; }
+
+        /* Drop Zone */
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+            background: #f8fafc;
+        }
+        .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent-blue); background: #eff6ff; color: var(--accent-blue); }
+
+        /* Tables */
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .data-table th {
+            background: #f9fafb; padding: 12px; text-align: left;
+            font-size: 0.85rem; color: #6b7280; font-weight: 600; border-bottom: 1px solid #e5e7eb; white-space: nowrap;
+            cursor: pointer; user-select: none;
+        }
+        .data-table th:hover { background: #f3f4f6; color: #374151; }
+        .data-table td { padding: 12px; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; }
+        .data-table tr:hover td { background: #f9fafb; }
+
+        /* Comment Editor */
+        .resizable-editor {
+            border: 1px solid #d1d5db;
+            background: white;
+            display: flex; flex-direction: column;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            min-height: 80px; 
+            height: 120px;
+            position: relative;
+        }
+        
+        .resizable-editor .ql-toolbar { border:none !important; border-bottom: 1px solid #d1d5db !important; }
+        .resizable-editor .ql-container { border:none !important; flex: 1; overflow-y: auto; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); z-index: 200; display: none;
+            align-items: center; justify-content: center;
+        }
+        .modal-box {
+            background: white; padding: 20px; border-radius: 8px; width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* Expanded Editor Modal */
+        .expanded-editor-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 500; display: none;
+            flex-direction: column;
+        }
+        .expanded-toolbar {
+            padding: 10px 20px; background: #f3f4f6; border-bottom: 1px solid #d1d5db;
+            display: flex; justify-content: flex-end; align-items: center;
+        }
+        .expanded-editor-container {
+            flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 20px; max-width: 1000px; margin: 0 auto; width: 100%;
+        }
+        .expanded-editor-container .ql-container { border: 1px solid #d1d5db !important; border-top: none !important; flex: 1; overflow-y: auto;}
+
+        /* Excel Tabs */
+        .sheet-tabs { display: flex; gap: 4px; background: #f3f4f6; padding: 8px 12px 0 12px; border-bottom: 1px solid #d1d5db; overflow-x: auto; width: 100%;}
+        .sheet-tab { 
+            padding: 8px 16px; background: #e5e7eb; border-radius: 6px 6px 0 0; 
+            cursor: pointer; font-size: 0.85rem; color: #555; 
+            border: 1px solid #d1d5db; border-bottom: none;
+            white-space: nowrap;
+        }
+        .sheet-tab:hover { background: #f9fafb; }
+        .sheet-tab.active { background: white; color: #166534; font-weight: bold; border-bottom: 2px solid white; position: relative; top: 1px;}
+
+        /* Excel Sheet Style (Point 2) */
+        .excel-table { border-collapse: collapse; font-family: monospace; font-size: 13px; margin: 0; }
+        .excel-table td, .excel-table th { border: 1px solid #d1d5db; padding: 4px 8px; min-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .excel-header { background: #f3f4f6; color: #4b5563; font-weight: bold; text-align: center; user-select: none; }
+        .excel-row-num { background: #f3f4f6; color: #4b5563; font-weight: bold; text-align: center; width: 40px; min-width: 40px; user-select: none; }
+        
+        /* Utils */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none !important; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+        .btn-ghost { background: transparent; color: #374151; border-color: #d1d5db; }
+        .btn-ghost:hover { background: #f3f4f6; }
+        .btn-primary { background: var(--accent-blue); color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: var(--status-green); color: white; }
+        .btn-danger { background: var(--status-red); color: white; }
+        .btn-danger-outline { background: white; color: var(--status-red); border: 1px solid var(--status-red); }
+        .btn-danger-outline:hover { background: #fef2f2; }
+        
+        .status-badge { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .st-pending { background: #eff6ff; color: #1d4ed8; }
+        .st-approved { background: #f0fdf4; color: #15803d; }
+        .st-rejected { background: #fef2f2; color: #b91c1c; }
+        .st-draft { background: #f3f4f6; color: #4b5563; }
+        .st-cancelled { background: #e5e7eb; color: #6b7280; text-decoration: line-through; }
+        
+        .btn-back { color: var(--accent-blue); font-weight: 600; }
+        .btn-back:hover { background: #eff6ff; }
+
+        /* Print Styles - Center Header */
+        @media print {
+            @page { size: auto; margin: 10mm; }
+            body, .app-container { height: auto !important; display: block !important; padding: 0 !important; margin: 0 !important; overflow: visible !important; }
+            
+            /* Hide UI Elements */
+            .top-nav, .sidebar-resizer, .detail-sidebar, .detail-toolbar, .internal-tabs, #btn-save-draft, .drop-zone, .card-delete-btn, .file-delete-btn, .editor-expand-btn { display: none !important; }
+            
+            #main-content { border: none; box-shadow: none; border-radius: 0; }
+            .detail-layout { display: block; overflow: visible; height: auto; }
+            .detail-main { overflow: visible; height: auto; }
+            .detail-content { padding: 0; overflow: visible; background: white; }
+            
+            /* Print only the active pane */
+            .internal-pane { display: none !important; }
+            .internal-pane.active { display: block !important; }
+            
+            body { background: white; font-size: 9pt; zoom: 0.8; }
+            .paper-form { box-shadow: none; border: none; padding: 0; margin: 0; max-width: 100%; width: 100%; }
+            
+            /* Centered Title */
+            .paper-form-title { text-align: center !important; margin-bottom: 20px; font-size: 1.5rem; width: 100%; display: block;}
+            
+            /* Compact Paper Fields for Print */
+            .paper-section { page-break-inside: avoid; margin-bottom: 15px; border-radius: 0; }
+            .paper-section-header { padding: 4px 8px; font-size: 0.85rem; }
+            .paper-field-row { border-bottom-color: #eee; }
+            .paper-label { width: 120px; padding: 4px 8px; font-size: 0.8rem; }
+            .paper-value { padding: 4px 8px; font-size: 0.8rem; }
+            .paper-editor { min-height: auto; padding: 5px; }
+            
+            input, select { border: none !important; appearance: none; padding: 0; background: transparent !important; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header class="top-nav">
+        <div class="brand">
+            <div class="brand-icon"><span class="material-icons">assignment</span></div>
+            <span>Credit Application V31</span>
+        </div>
+        
+        <div class="nav-tabs" id="main-nav">
+            <!-- Populated via JS -->
+        </div>
+
+        <div class="user-area-wrapper">
+            <!-- Settings Icon -->
+            <div class="settings-btn" onclick="openSettingsModal()" title="Workflow Settings">
+                <span class="material-icons">settings</span>
+            </div>
+
+            <div class="user-container">
+                <div class="avatar" id="current-user-avatar" onclick="toggleUserMenu()">M</div>
+                <div class="role-badge" id="current-user-role">Maker</div>
+                <div class="dropdown-menu" id="user-menu">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        
+        <div id="view-dashboard" class="view-section active">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800" id="dashboard-greeting">Active Requests</h2>
+            </div>
+            <div class="notebook-grid" id="notebook-container">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+
+        <div id="view-request-detail" class="view-section" style="padding: 0; display: none;">
+            <div class="detail-layout">
+                <div class="detail-main">
+                    <div class="detail-toolbar">
+                        <button class="btn btn-ghost btn-back" onclick="handleBackNav()">
+                            <span class="material-icons">arrow_back</span> Back
+                        </button>
+                        <div class="font-bold text-lg" id="detail-header-title">Request #001</div>
+                        
+                        <div class="flex gap-2 items-center">
+                             <!-- Saved automatically, button removed per Requirement 4 -->
+                             <button class="btn btn-ghost" id="btn-save-draft" onclick="saveDraft()" style="display:none;"><span class="material-icons">save</span> Save</button>
+                            <button class="btn btn-ghost" onclick="window.print()"><span class="material-icons">print</span> Print</button>
+                        </div>
+                    </div>
+
+                    <div class="detail-content" id="form-container">
+                        <div class="internal-tabs">
+                            <div class="internal-tab active" onclick="switchInternalTab('req-form', this)">Request Form</div>
+                            <div class="internal-tab" onclick="switchInternalTab('review-form', this)">Review Form</div>
+                            <div class="internal-tab" onclick="switchInternalTab('summary', this)">One-Pager</div>
+                        </div>
+
+                        <div id="pane-req-form" class="internal-pane active">
+                            <div class="paper-form">
+                                <div class="paper-form-title">Customer Credit Application</div>
+                                
+                                <div class="paper-section">
+                                    <div class="paper-section-header">General Information</div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Ticker</div>
+                                        <div class="paper-value"><input type="text" id="frm-ticker" placeholder="Type AAPL, NVDA..." oninput="handleTickerInput(this)"></div>
+                                    </div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Company Name</div>
+                                        <div class="paper-value"><input type="text" id="frm-name"></div>
+                                    </div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Request Date</div>
+                                        <div class="paper-value"><input type="date" id="frm-date"></div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Request Purpose</div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Type</div>
+                                        <div class="paper-value">
+                                            <select id="frm-purpose" onchange="handlePurposeChange()">
+                                                <option value="New Credit Line">New Credit Line</option>
+                                                <option value="Credit Line Change">Credit Line Change</option>
+                                                <option value="Payment Term Change">Payment Term Change</option>
+                                                <option value="Add New Entity to Share">Add New Entity to Share</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="paper-field-row hidden" id="shared-entity-row">
+                                        <div class="paper-label">Shared Entities</div>
+                                        <div class="paper-value"><input type="text" id="frm-shared-tickers" placeholder="e.g. AAPL, GOOGL"></div>
+                                    </div>
+                                    <div class="paper-field-row hidden" id="shared-purpose-row">
+                                        <div class="paper-label">Description</div>
+                                        <div class="paper-value"><input type="text" id="frm-shared-purpose" placeholder="Sharing arrangement description"></div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Limits & Terms</div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Current Line</div>
+                                        <div class="paper-value"><input type="text" id="frm-curr-limit"></div>
+                                    </div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Proposed Line</div>
+                                        <div class="paper-value highlight">
+                                            <input type="text" id="frm-prop-limit" 
+                                                   oninput="handleLimitChange()" 
+                                                   onchange="handleLimitChange()"
+                                                   onkeyup="handleLimitChange()">
+                                        </div>
+                                    </div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Payment Term</div>
+                                        <div class="paper-value">
+                                            <select id="frm-payterm-select" onchange="handlePayTermChange()">
+                                                <option value="Net 30">Net 30</option>
+                                                <option value="Net 60">Net 60</option>
+                                                <option value="Net 90">Net 90</option>
+                                                <option value="Others">Others</option>
+                                            </select>
+                                            <input type="text" id="frm-payterm-other" class="hidden ml-2 border-b border-gray-300" placeholder="Specify term">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Order Forecast</div>
+                                    <div id="wrapper-forecast" class="editor-wrapper">
+                                        <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-forecast')"><span class="material-icons">open_in_full</span></div>
+                                        <div id="editor-forecast" class="paper-editor"></div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Business Description</div>
+                                    <div id="wrapper-biz-desc" class="editor-wrapper">
+                                        <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-biz-desc')"><span class="material-icons">open_in_full</span></div>
+                                        <div id="editor-biz-desc" class="paper-editor"></div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Attachments</div>
+                                    <div class="p-4">
+                                        <div id="drop-zone" class="drop-zone hidden" 
+                                             onclick="document.getElementById('file-upload-input').click()"
+                                             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                                            <span class="material-icons text-3xl mb-2">cloud_upload</span>
+                                            <div>Click or Drag & Drop files here</div>
+                                            <div class="text-xs text-gray-400 mt-1">Supports Multiple Files (PDF, Excel, Word)</div>
+                                            <input type="file" id="file-upload-input" multiple class="hidden" onchange="handleFileSelect(event, 'request')">
+                                        </div>
+                                        <div class="flex gap-4 flex-wrap" id="file-list-area"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-8 pt-4 border-t border-gray-300 text-sm flex items-end">
+                                    <div class="font-bold mr-2">Prepared by:</div>
+                                    <input type="text" id="req-prepared-by" class="border-b border-gray-400 outline-none w-64 bg-transparent" value="Tim Cook">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="pane-review-form" class="internal-pane">
+                            <div class="paper-form">
+                                <div class="paper-form-title">Customer Credit Review</div>
+                                
+                                <!-- Requirement 2: Editable Header inputs for Reviewer -->
+                                <div class="paper-header-row">
+                                    <div class="flex items-center">
+                                        <strong>Customer:</strong> 
+                                        <input type="text" id="rev-header-name" readonly class="ml-2 font-bold text-lg">
+                                    </div>
+                                    <div class="flex items-center">
+                                        <strong>Date:</strong> 
+                                        <input type="date" id="rev-header-date" readonly class="ml-2">
+                                    </div>
+                                </div>
+                                <div class="paper-header-row">
+                                    <div class="flex items-center w-full">
+                                        <strong>Parent Company:</strong> 
+                                        <input type="text" id="rev-header-parent" readonly class="ml-2 w-full">
+                                    </div>
+                                </div>
+                                <div class="paper-header-row mb-4">
+                                    <div class="flex items-center w-full">
+                                        <strong>Line Shared Entities:</strong> 
+                                        <input type="text" id="rev-header-shared" readonly class="ml-2 w-full">
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-grid-2">
+                                        <div class="paper-col">
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Customer Code</div>
+                                                <div class="paper-value"><input type="text" id="rev-code"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Region / AM</div>
+                                                <div class="paper-value"><input type="text" id="rev-region-am"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Relation Since</div>
+                                                <div class="paper-value"><input type="text" id="rev-since"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Last Review</div>
+                                                <div class="paper-value"><input type="text" id="rev-last-rev"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Next Review</div>
+                                                <div class="paper-value"><input type="text" id="rev-next-rev"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Int / Ext Rating</div>
+                                                <div class="paper-value"><input type="text" id="rev-rating"></div>
+                                            </div>
+                                        </div>
+                                        <div class="paper-col">
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Credit Line</div>
+                                                <div class="paper-value"><input type="text" id="rev-credit-line"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Utilization (%)</div>
+                                                <div class="paper-value"><input type="text" id="rev-util"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">AR Outstanding</div>
+                                                <div class="paper-value"><input type="text" id="rev-ar"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Overdue / % AR</div>
+                                                <div class="paper-value"><input type="text" value="0 / 0%"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Payment Term</div>
+                                                <div class="paper-value"><input type="text" id="rev-payterm"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">WACD</div>
+                                                <div class="paper-value"><input type="text" value="1.5%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Purpose Of This Request</div>
+                                    <div class="paper-value">
+                                        <div id="wrapper-purpose" class="editor-wrapper w-full">
+                                            <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-purpose')"><span class="material-icons">open_in_full</span></div>
+                                            <div id="editor-purpose" class="paper-editor" style="min-height: 80px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section">
+                                    <div class="paper-section-header">Market Data</div>
+                                    <div class="paper-grid-2">
+                                        <div class="paper-col">
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Business Domain</div>
+                                                <div class="paper-value"><input type="text" id="rev-domain"></div>
+                                            </div>
+                                            <div class="paper-field-row">
+                                                <div class="paper-label">Listed/Private</div>
+                                                <div class="paper-value"><input type="text" id="rev-listed-display"></div>
+                                            </div>
+                                        </div>
+                                        <!-- Requirement 5: Market Cap Layout Adjustment -->
+                                        <div class="paper-col">
+                                            <div class="paper-field-row" style="height: 100%;">
+                                                <div class="paper-label" style="height: auto; width: 100px;">Market Cap<br><span style="font-size:0.75rem; font-weight:normal;">(12M)</span></div>
+                                                <div class="paper-value" style="padding: 4px 8px;">
+                                                    <div class="mcap-container">
+                                                        <div class="mcap-cell" style="flex: 1;">
+                                                            <span class="mcap-label">Current</span>
+                                                            <input type="text" id="mcap-curr" class="text-center font-bold text-xs bg-transparent w-full" value="$2.8T">
+                                                        </div>
+                                                        <div class="mcap-cell" style="flex: 1;">
+                                                            <span class="mcap-label">High</span>
+                                                            <input type="text" id="mcap-high" class="text-center font-bold text-xs bg-transparent w-full" value="$3.0T">
+                                                        </div>
+                                                        <div class="mcap-cell" style="flex: 1;">
+                                                            <span class="mcap-label">Low</span>
+                                                            <input type="text" id="mcap-low" class="text-center font-bold text-xs bg-transparent w-full" value="$2.2T">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section" id="risk-analysis-block">
+                                    <div class="paper-section-header">Key Risks Analysis</div>
+                                    <div class="paper-grid-2">
+                                        <div class="paper-col" style="border-right:1px solid #d1d5db;">
+                                            <div class="p-2 font-bold underline text-xs text-gray-500">Major Credit Risks</div>
+                                            <div id="wrapper-risks" class="editor-wrapper">
+                                                <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-risks')"><span class="material-icons">open_in_full</span></div>
+                                                <div id="editor-risks" class="paper-editor"></div>
+                                            </div>
+                                        </div>
+                                        <div class="paper-col">
+                                            <div class="p-2 font-bold underline text-xs text-gray-500">Mitigants</div>
+                                            <div id="wrapper-mitigants" class="editor-wrapper">
+                                                <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-mitigants')"><span class="material-icons">open_in_full</span></div>
+                                                <div id="editor-mitigants" class="paper-editor"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="paper-section" style="margin-bottom:0;">
+                                    <div class="paper-section-header">Decision / Comments</div>
+                                    <div id="wrapper-recommendation" class="editor-wrapper">
+                                        <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-recommendation')"><span class="material-icons">open_in_full</span></div>
+                                        <div id="editor-recommendation" class="paper-editor"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Reviewer Attachments - Requirement 2: Rename Header -->
+                                <div class="paper-section mt-4 hidden" id="reviewer-upload-section">
+                                    <div class="paper-section-header">Attachments</div>
+                                    <div class="p-4">
+                                        <div id="drop-zone-reviewer" class="drop-zone" 
+                                             onclick="document.getElementById('rev-file-input').click()"
+                                             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'review')">
+                                            <span class="material-icons text-3xl mb-2">cloud_upload</span>
+                                            <div>Click or Drag & Drop files here</div>
+                                            <input type="file" id="rev-file-input" multiple class="hidden" onchange="handleFileSelect(event, 'review')">
+                                        </div>
+                                        <div class="flex gap-4 flex-wrap mt-2" id="reviewer-file-list-area"></div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-8 pt-4 border-t border-gray-300 text-sm flex items-end">
+                                    <div class="font-bold mr-2">Prepared by:</div>
+                                    <input type="text" id="rev-prepared-by" class="border-b border-gray-400 outline-none w-64 bg-transparent" value="Jensen Huang">
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div id="pane-summary" class="internal-pane">
+                             <div class="paper-form">
+                                <div class="paper-form-title">Credit Summary</div>
+                                <div id="wrapper-summary" class="editor-wrapper">
+                                    <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-summary')"><span class="material-icons">open_in_full</span></div>
+                                    <div id="editor-summary" class="paper-editor" style="min-height: 600px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-resizer" id="resizer">
+                    <div class="sidebar-toggle-divider" onclick="toggleSidebar()" title="Toggle Sidebar">
+                        <span class="material-icons" style="font-size:16px;">chevron_right</span>
+                    </div>
+                </div>
+
+                <div class="detail-sidebar" id="workflow-sidebar">
+                    <div class="sidebar-header">
+                        <span class="font-bold">Approval Workflow</span>
+                        <button id="btn-edit-workflow" class="btn btn-ghost btn-sm hidden" onclick="toggleWorkflowEditMode()" title="Edit Workflow">
+                            <span class="material-icons text-blue-500">edit_road</span>
+                        </button>
+                    </div>
+
+                    <div class="workflow-wrapper" id="workflow-wrapper">
+                        <div class="workflow-content" id="workflow-list">
+                            <!-- Populated via JS -->
+                        </div>
+                        
+                        <div id="workflow-edit-controls" class="hidden p-3 bg-blue-50 border-t border-b border-blue-200">
+                            <div class="text-xs font-bold text-blue-800 mb-2">Workflow Management</div>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary btn-sm w-full" onclick="addWorkflowStep()">+ Step</button>
+                                <button class="btn btn-ghost btn-sm w-full" onclick="toggleWorkflowEditMode()">Done</button>
+                            </div>
+                            <div class="text-xs text-gray-400 mt-2">Drag or use arrow buttons to reorder</div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-vertical-resizer" id="vertical-resizer"></div>
+
+                    <div class="p-4 bg-gray-50 action-area" id="workflow-actions">
+                        <div id="return-options" class="mb-3 hidden">
+                             <label class="text-xs font-bold text-red-500 mb-1 block">Return To Step:</label>
+                             <select class="f-select text-sm p-2 w-full border rounded" id="return-target-step"></select>
+                        </div>
+                        
+                        <div id="comment-section-wrapper">
+                            <div class="flex justify-between items-end mb-1">
+                                <label class="text-xs font-bold text-gray-500">Comments</label>
+                            </div>
+                            <div id="wrapper-action-comment" class="resizable-editor editor-wrapper">
+                                <!-- Requirement 3: Expand Icon for Comment -->
+                                <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-action-comment')"><span class="material-icons">open_in_full</span></div>
+                                <div id="editor-action-comment"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="maker-action-buttons" class="hidden flex gap-2 mb-2">
+                             <button class="btn btn-success flex-1 text-white" onclick="processAction('approve')">Resubmit</button>
+                             <button class="btn btn-danger flex-1 text-white" onclick="cancelRequest()">Cancel</button>
+                        </div>
+
+                        <div id="standard-action-buttons" class="flex gap-2 mb-2">
+                            <button class="btn btn-success flex-1" id="btn-approve" onclick="processAction('approve')">Approve</button>
+                            <button class="btn btn-danger flex-1" id="btn-return" onclick="toggleReturnMode()">Return</button>
+                        </div>
+
+                        <div class="hidden flex gap-2" id="return-confirm-area">
+                             <button class="btn btn-danger flex-1" onclick="processAction('reject')">Confirm Return</button>
+                             <button class="btn btn-ghost flex-1" onclick="cancelReturnMode()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-customer-master" class="view-section">
+            <div class="flex justify-between mb-4">
+                <h2 class="text-xl font-bold">Customer Master Database</h2>
+            </div>
+            <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-200 overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Ticker</th><th>Name</th><th>Family</th><th>Region</th><th>Sector</th><th>Domain</th><th>Account Manager</th><th>Credit Line</th><th>A/R Bal</th><th>Util %</th><th>Last Review</th></tr>
+                    </thead>
+                    <tbody id="master-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-historical" class="view-section">
+            <h2 class="text-xl font-bold mb-4">Application History</h2>
+            
+            <!-- Requirement 6: History Filters & Tools -->
+            <div class="flex flex-wrap gap-4 mb-4 bg-white p-3 rounded shadow-sm border border-gray-200 items-end">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Ticker</label>
+                    <input type="text" id="hist-filter-ticker" class="border rounded p-2 text-sm w-32" placeholder="Search..." oninput="renderHistorical()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Purpose</label>
+                    <select id="hist-filter-purpose" class="border rounded p-2 text-sm w-40" onchange="renderHistorical()">
+                        <option value="">All</option>
+                        <option value="New Credit Line">New Credit Line</option>
+                        <option value="Credit Line Change">Credit Line Change</option>
+                    </select>
+                </div>
+                 <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">Status</label>
+                    <select id="hist-filter-status" class="border rounded p-2 text-sm w-32" onchange="renderHistorical()">
+                        <option value="">All</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="ml-auto flex gap-2">
+                     <button class="btn btn-ghost btn-sm" onclick="openColumnConfig()"><span class="material-icons text-sm">view_column</span> Columns</button>
+                     <button class="btn btn-ghost btn-sm" onclick="copyHistoricalToClipboard()"><span class="material-icons text-sm">content_copy</span> Copy</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-200">
+                <table class="data-table">
+                    <thead id="historical-thead"></thead>
+                    <tbody id="historical-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-financials" class="view-section">
+            <div class="bg-white p-6 rounded shadow-sm text-center">
+                <h2 class="text-xl font-bold mb-4">Financial Analysis</h2>
+                <input type="text" class="f-input p-2 border rounded" placeholder="Enter Ticker" style="max-width:300px; display:inline-block;">
+                <button class="btn btn-primary">Search</button>
+            </div>
+        </div>
+
+        <div id="view-market" class="view-section">
+             <div class="bg-white rounded-xl shadow-sm p-6 max-w-4xl mx-auto">
+                <h2 class="text-xl font-bold mb-6">Magnificent 7 Performance</h2>
+                <table class="data-table">
+                    <thead><tr><th>Ticker</th><th>Name</th><th>Price</th><th>1D %</th><th>1W %</th><th>YTD %</th></tr></thead>
+                    <tbody id="mag7-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Expanded Editor Modal (Requirement 3) -->
+<div class="expanded-editor-modal" id="expanded-editor-modal">
+    <div class="expanded-toolbar">
+         <button class="btn btn-ghost" onclick="closeExpandedEditor()"><span class="material-icons">close</span> Close</button>
+    </div>
+    <div class="expanded-editor-container">
+        <div id="expanded-quill-container"></div>
+    </div>
+</div>
+
+<!-- User Selection Modal -->
+<div class="modal-overlay" id="user-select-modal" onclick="closeUserSelect(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg mb-4">Assign User</h3>
+        <div class="flex gap-2 mb-3">
+            <input type="text" id="user-search-input" placeholder="Search or type name..." class="w-full p-2 border rounded" oninput="filterUserList()">
+            <button class="btn btn-primary btn-sm" onclick="assignCustomUser()" title="Use typed name"><span class="material-icons">check</span></button>
+        </div>
+        <div class="max-h-[200px] overflow-y-auto border rounded divide-y" id="user-select-list"></div>
+        <div class="mt-4 flex justify-end">
+            <button class="btn btn-ghost btn-sm" onclick="closeUserSelect(null)">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal" onclick="closeSettingsModal(event)">
+    <div class="modal-box" style="width: 500px;" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="material-icons text-gray-500">settings</span> Approval Levels
+        </h3>
+        <table class="w-full text-sm border-collapse mb-4">
+            <thead>
+                <tr class="bg-gray-100 text-left">
+                    <th class="p-2 border">Limit Range</th>
+                    <th class="p-2 border">Required Workflow</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td class="p-2 border">< $10M</td><td class="p-2 border">Maker &rarr; Reviewer &rarr; Approver</td></tr>
+                <tr><td class="p-2 border">$10M - $50M</td><td class="p-2 border">+ Manager</td></tr>
+                <tr><td class="p-2 border">$50M - $100M</td><td class="p-2 border">+ CFO</td></tr>
+                <tr><td class="p-2 border">> $100M</td><td class="p-2 border">+ CEO</td></tr>
+            </tbody>
+        </table>
+        <div class="text-xs text-gray-500 mb-4 bg-yellow-50 p-2 rounded border border-yellow-200">
+            <span class="font-bold">Note:</span> These rules are enforced. You may add extra approvers, but removing mandatory roles is restricted.
+        </div>
+        <div class="flex justify-end">
+            <button class="btn btn-ghost" onclick="closeSettingsModal(null)">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Column Config Modal -->
+<div class="modal-overlay" id="column-config-modal" onclick="closeColumnConfig(event)">
+    <div class="modal-box" style="width: 300px;" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg mb-4">Column Settings</h3>
+        <div id="col-config-list" class="flex flex-col gap-2 mb-4"></div>
+        <div class="flex justify-end">
+            <button class="btn btn-primary btn-sm" onclick="applyColumnConfig()">Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- File Preview Modal -->
+<div class="modal-overlay" id="preview-modal" style="z-index: 300;" onclick="closePreview(event)">
+    <div class="bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden w-11/12 h-5/6" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center p-3 border-b bg-gray-50">
+            <div class="font-bold flex items-center gap-2">
+                <span id="preview-icon" class="material-icons text-blue-500">description</span>
+                <span id="preview-filename">File.pdf</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="closePreview(null)"><span class="material-icons">close</span></button>
+        </div>
+        <div id="excel-tabs" class="sheet-tabs hidden"></div>
+        <div class="flex-1 bg-gray-100 overflow-auto relative p-4" id="preview-body"></div>
+    </div>
+</div>
+
+<script>
+    // --- Data Model ---
+    const USERS = [
+        { id: '1001', name: 'Tim Cook', role: 'Maker', avatar: 'TC' },
+        { id: '2001', name: 'Jensen Huang', role: 'Reviewer', avatar: 'JH' },
+        { id: '3001', name: 'Elon Musk', role: 'Approver', avatar: 'EM' },
+        { id: '4001', name: 'Satya Nadella', role: 'Manager', avatar: 'SN' },
+        { id: '5001', name: 'Andy Jassy', role: 'CFO', avatar: 'AJ' },
+        { id: '6001', name: 'Sundar Pichai', role: 'CEO', avatar: 'SP' },
+        { id: '7001', name: 'Mark Zuckerberg', role: 'Reviewer', avatar: 'MZ' },
+    ];
+    let currentUser = USERS[0];
+    let previousView = 'dashboard'; 
+    let sourceView = 'dashboard';
+    let workflowEditMode = false;
+    let editingStepIndex = -1;
+
+    const APPROVAL_MATRIX = [
+        { limit: 100000000, roles: ['Maker', 'Reviewer', 'Approver', 'Manager', 'CFO', 'CEO'] },
+        { limit: 50000000,  roles: ['Maker', 'Reviewer', 'Approver', 'Manager', 'CFO'] },
+        { limit: 10000000,  roles: ['Maker', 'Reviewer', 'Approver', 'Manager'] },
+        { limit: 0,         roles: ['Maker', 'Reviewer', 'Approver'] }
+    ];
+
+    const WORKFLOW_ROLES = ['Maker', 'Reviewer', 'Approver', 'Manager', 'CFO', 'CEO'];
+    
+    const CUSTOMER_DB = {
+        'AAPL': { name: 'Apple Inc.', family: 'Apple Grp', region: 'NAM', sector: 'Consumer', domain: 'Technology', am: 'John Sales', creditLine: 50000000, ar: 1200000, util: 2.4, lastRev: '2024-05-01', nextRev: '2025-05-01', id: 'CUST-001', rating: 'AAA', est: '1976', payTerm: 'Net 60', intRating: 'IG1', listed: true },
+        'NVDA': { name: 'Nvidia Corp.', family: 'Nvidia Grp', region: 'NAM', sector: 'Enterprise', domain: 'Semiconductors', am: 'Sarah Chip', creditLine: 20000000, ar: 15000000, util: 75.0, lastRev: '2024-06-15', nextRev: '2025-06-15', id: 'CUST-002', rating: 'AA+', est: '1993', payTerm: 'Net 45', intRating: 'IG2', listed: true },
+        'TSLA': { name: 'Tesla Inc.', family: 'Tesla Grp', region: 'NAM', sector: 'Auto', domain: 'Automotive', am: 'Mike Car', creditLine: 15000000, ar: 8000000, util: 53.3, lastRev: '2024-04-10', nextRev: '2025-04-10', id: 'CUST-003', rating: 'BBB', est: '2003', payTerm: 'Net 30', intRating: 'IG4', listed: true },
+        'MSFT': { name: 'Microsoft Corp.', family: 'MSFT Grp', region: 'NAM', sector: 'Enterprise', domain: 'Technology', am: 'Bill Gates', creditLine: 80000000, ar: 500000, util: 0.6, lastRev: '2024-02-20', nextRev: '2025-02-20', id: 'CUST-004', rating: 'AAA', est: '1975', payTerm: 'Net 60', intRating: 'IG1', listed: true },
+        'AMZN': { name: 'Amazon.com Inc.', family: 'Amazon Grp', region: 'NAM', sector: 'Consumer', domain: 'E-commerce', am: 'Jeff B', creditLine: 60000000, ar: 30000000, util: 50.0, lastRev: '2024-03-01', nextRev: '2025-03-01', id: 'CUST-005', rating: 'AA', est: '1994', payTerm: 'Net 45', intRating: 'IG2', listed: true },
+        'GOOGL': { name: 'Alphabet Inc.', family: 'Google Grp', region: 'NAM', sector: 'Internet', domain: 'Technology', am: 'Larry P', creditLine: 55000000, ar: 1000000, util: 1.8, lastRev: '2024-05-15', nextRev: '2025-05-15', id: 'CUST-006', rating: 'AA+', est: '1998', payTerm: 'Net 60', intRating: 'IG2', listed: true },
+        'META': { name: 'Meta Platforms', family: 'Meta Grp', region: 'NAM', sector: 'Internet', domain: 'Social Media', am: 'Mark Z', creditLine: 30000000, ar: 29000000, util: 96.6, lastRev: '2024-01-10', nextRev: '2025-01-10', id: 'CUST-007', rating: 'A+', est: '2004', payTerm: 'Net 30', intRating: 'IG3', listed: true }
+    };
+
+    let requests = [
+        {
+            id: 'REQ-2025-001', ticker: 'AAPL', name: 'Apple Inc.', status: 'Approved', stepIndex: 5,
+            currLimit: 50000000, propLimit: 60000000, purpose: 'Credit Line Change', date: '2025-01-15',
+            forecast: 'Q3 Orders expected to rise 20%.', bizDesc: 'Major partner for mobile chipsets.',
+            risks: 'Concentration risk high.', mitigants: 'Cash rich entity.', recommendation: 'Approve.',
+            files: [],
+            history: [
+                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-01-15 09:00' },
+                { role: 'Reviewer', user: 'Jensen Huang', status: 'Approved', date: '2025-01-15 11:00' },
+                { role: 'Approver', user: 'Elon Musk', status: 'Approved', date: '2025-01-16 10:00' },
+                { role: 'Manager', user: 'Satya Nadella', status: 'Approved', date: '2025-01-16 14:00' },
+                { role: 'CFO', user: 'Andy Jassy', status: 'Approved', date: '2025-01-17 09:00' },
+                { role: 'CEO', user: 'Sundar Pichai', status: 'Approved', date: '2025-01-17 10:00' }
+            ]
+        },
+        {
+            id: 'REQ-2025-003', ticker: 'NVDA', name: 'Nvidia Corp.', status: 'Pending', stepIndex: 2,
+            currLimit: 20000000, propLimit: 40000000, purpose: 'New Credit Line', date: '2025-05-10',
+            forecast: 'AI chip demand surging.', bizDesc: 'New H100 orders.',
+            risks: 'Supply chain constraints.', mitigants: 'Dominant market share.', recommendation: 'Recommended for approval.',
+            files: [],
+            history: [
+                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-05-10 10:00' },
+                { role: 'Reviewer', user: 'Jensen Huang', status: 'Approved', date: '2025-05-11 14:00' },
+                { role: 'Approver', user: 'Elon Musk', status: 'Pending', date: null },
+                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
+                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
+                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
+            ]
+        },
+        {
+            id: 'REQ-2025-004', ticker: 'TSLA', name: 'Tesla Inc.', status: 'Returned', stepIndex: 0,
+            currLimit: 15000000, propLimit: 25000000, purpose: 'Payment Term Change', date: '2025-05-15',
+            forecast: 'EV production ramp up.', bizDesc: 'Global expansion.',
+            risks: 'Margin compression.', mitigants: 'Cost cutting.', recommendation: '',
+            files: [],
+            history: [
+                { role: 'Maker', user: 'Tim Cook', status: 'Pending', date: null },
+                { role: 'Reviewer', user: 'Jensen Huang', status: 'Returned', date: '2025-05-16 09:00', comment: 'Please clarify payment terms.' },
+                { role: 'Approver', user: 'Elon Musk', status: 'Pending', date: null },
+                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
+                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
+                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
+            ]
+        },
+        {
+            id: 'REQ-2025-008', ticker: '', name: '', status: 'Draft', stepIndex: 0,
+            currLimit: 0, propLimit: 0, purpose: 'New Credit Line', date: '',
+            forecast: '', bizDesc: '', risks: '', mitigants: '', recommendation: '', files: [],
+            history: [{ role: 'Maker', user: 'Tim Cook', status: 'Pending', date: null }] 
+        },
+        {
+            id: 'REQ-2025-009', ticker: 'AMZN', name: 'Amazon.com Inc.', status: 'Pending', stepIndex: 1, 
+            currLimit: 50000000, propLimit: 55000000, purpose: 'Credit Line Change', date: '2025-06-01',
+            forecast: 'Prime day prep.', bizDesc: 'Retail.', risks: '', mitigants: '', recommendation: '', files: [],
+            history: [
+                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-06-01 09:00' },
+                { role: 'Reviewer', user: 'Jensen Huang', status: 'Pending', date: null },
+                { role: 'Approver', user: 'Elon Musk', status: 'Pending', date: null },
+                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
+                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
+                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
+            ]
+        },
+        {
+            id: 'REQ-2025-010', ticker: 'MSFT', name: 'Microsoft Corp.', status: 'Pending', stepIndex: 3, 
+            currLimit: 120000000, propLimit: 150000000, purpose: 'New Credit Line', date: '2025-06-05',
+            forecast: 'Azure expansion.', bizDesc: 'Cloud.', risks: 'None', mitigants: 'Cash rich', recommendation: 'Approve', files: [],
+            history: [
+                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-06-05 09:00' },
+                { role: 'Reviewer', user: 'Jensen Huang', status: 'Approved', date: '2025-06-05 14:00' },
+                { role: 'Approver', user: 'Elon Musk', status: 'Approved', date: '2025-06-06 10:00' },
+                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
+                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
+                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
+            ]
+        }
+    ];
+
+    // History Column Configuration
+    let historyConfig = {
+        columns: [
+            { id: 'id', label: 'Req ID', visible: true },
+            { id: 'ticker', label: 'Ticker', visible: true },
+            { id: 'company', label: 'Company', visible: true },
+            { id: 'purpose', label: 'Purpose', visible: true },
+            { id: 'creditLine', label: 'Credit Line', visible: true },
+            { id: 'finalDate', label: 'Final Date', visible: true },
+            { id: 'approveBy', label: 'Approve by', visible: true },
+            { id: 'status', label: 'Status', visible: true }
+        ],
+        sort: { column: 'finalDate', dir: 'desc' }
+    };
+
+    let currentReqId = null;
+    let quillForecast, quillBizDesc, quillRisks, quillMitigants, quillRecommendation, quillSummary, quillActionComment, quillPurpose;
+    let expandedQuill = null;
+    let expandedSourceQuill = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initQuill();
+        initResizer();
+        renderUserMenu();
+        updateNavTabs();
+        renderDashboardGreeting();
+        renderNotebooks();
+        renderCustomerMaster();
+        fetchMag7();
+        renderHistorical();
+        setInterval(renderDashboardGreeting, 60000); 
+    });
+
+    function initQuill() {
+        const fullToolbarOps = {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    [{ 'align': [] }],
+                    ['link', 'image', 'video'],
+                    ['clean']
+                ]
+            }
+        };
+
+        const simpleToolbarOps = {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
+                    ['bold', 'italic', 'underline'],
+                    [{ 'color': [] }],
+                    ['clean']
+                ]
+            }
+        };
+
+        quillForecast = new Quill('#editor-forecast', fullToolbarOps);
+        quillBizDesc = new Quill('#editor-biz-desc', fullToolbarOps);
+        quillRisks = new Quill('#editor-risks', fullToolbarOps);
+        quillMitigants = new Quill('#editor-mitigants', fullToolbarOps);
+        quillRecommendation = new Quill('#editor-recommendation', fullToolbarOps);
+        quillActionComment = new Quill('#editor-action-comment', simpleToolbarOps);
+        quillSummary = new Quill('#editor-summary', fullToolbarOps);
+        quillPurpose = new Quill('#editor-purpose', simpleToolbarOps);
+
+        // Expanded Quill Instance
+        expandedQuill = new Quill('#expanded-quill-container', fullToolbarOps);
+        expandedQuill.on('text-change', () => {
+             if(expandedSourceQuill) {
+                 expandedSourceQuill.root.innerHTML = expandedQuill.root.innerHTML;
+             }
+        });
+
+        quillSummary.root.innerHTML = `<p><strong>Business Desc.:</strong></p><p>Insert details here...</p>`;
+    }
+
+    // --- Resizer Logic ---
+    function initResizer() {
+        const resizer = document.getElementById('resizer');
+        const sidebar = document.getElementById('workflow-sidebar');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            if(e.target.closest('.sidebar-toggle-divider')) return; 
+            isResizing = true;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const newWidth = document.body.clientWidth - e.clientX;
+            if (newWidth > 0 && newWidth < 800) {
+                sidebar.style.width = newWidth + 'px';
+                sidebar.classList.remove('collapsed');
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            resizer.classList.remove('resizing');
+            document.body.style.cursor = '';
+        });
+
+        const vResizer = document.getElementById('vertical-resizer');
+        const actionArea = document.getElementById('workflow-actions');
+        let isVResizing = false;
+        let startY, startActionHeight;
+
+        vResizer.addEventListener('mousedown', (e) => {
+            isVResizing = true;
+            startY = e.clientY;
+            startActionHeight = actionArea.getBoundingClientRect().height;
+            document.body.style.cursor = 'row-resize';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isVResizing) return;
+            const dy = startY - e.clientY;
+            let newHeight = startActionHeight + dy;
+            if(newHeight > 100 && newHeight < 600) {
+                 actionArea.style.height = newHeight + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isVResizing = false;
+            document.body.style.cursor = '';
+        });
+    }
+
+    function toggleSidebar() {
+        const sb = document.getElementById('workflow-sidebar');
+        sb.classList.toggle('collapsed');
+        const icon = document.querySelector('.sidebar-toggle-divider span');
+        if(sb.classList.contains('collapsed')) {
+             sb.style.width = '0';
+             icon.innerText = 'chevron_left';
+        } else {
+             sb.style.width = '380px';
+             icon.innerText = 'chevron_right';
+        }
+    }
+
+    function updateNavTabs() {
+        const container = document.getElementById('main-nav');
+        const tabs = [
+            { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', roles: ['All'] },
+            { id: 'customer-master', icon: 'business', label: 'Customer Master', roles: ['Maker', 'Reviewer'] },
+            { id: 'historical', icon: 'history', label: 'History', roles: ['All'] },
+            { id: 'financials', icon: 'attach_money', label: 'Financials', roles: ['All'] },
+            { id: 'market', icon: 'show_chart', label: 'Market', roles: ['Maker', 'Reviewer', 'Approver', 'Manager'] } 
+        ];
+
+        container.innerHTML = tabs
+            .filter(t => t.roles.includes('All') || t.roles.includes(currentUser.role))
+            .map(t => `
+                <div class="nav-tab ${t.id === 'dashboard' ? 'active' : ''}" data-tab="${t.id}" onclick="navTo('${t.id}')">
+                    <span class="material-icons" style="font-size:18px;">${t.icon}</span> ${t.label}
+                </div>
+            `).join('');
+    }
+
+    function navTo(tabId) {
+        if (workflowEditMode) toggleWorkflowEditMode(); 
+        
+        if (currentUser.role === 'Maker' && currentReqId) {
+            const req = requests.find(r => r.id === currentReqId);
+            if (req && (req.status === 'Draft' || req.status === 'Returned')) {
+                commitSave(true);
+            }
+        }
+
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        const tabEl = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+        if(tabEl) tabEl.classList.add('active');
+
+        document.querySelectorAll('.view-section').forEach(v => {
+            v.style.display = 'none';
+            v.classList.remove('active');
+        });
+        
+        const view = document.getElementById(`view-${tabId}`);
+        if(view) {
+            view.style.display = 'block';
+            setTimeout(() => view.classList.add('active'), 10);
+        }
+
+        if(tabId === 'dashboard') renderNotebooks();
+        if(tabId === 'historical') renderHistorical();
+    }
+    
+    function handleBackNav() {
+        if (currentUser.role === 'Maker') {
+            const req = requests.find(r => r.id === currentReqId);
+            if (req && (req.status === 'Draft' || req.status === 'Returned')) {
+                commitSave(true);
+            }
+        }
+        navTo(sourceView);
+    }
+
+    function renderUserMenu() {
+        const menu = document.getElementById('user-menu');
+        menu.innerHTML = USERS.filter(u => u.id < 9000).map(u => `
+            <div class="dropdown-item ${currentUser.id === u.id ? 'active' : ''}" onclick="selectUser('${u.id}')">
+                <span>${u.name}</span>
+                <span class="text-xs text-gray-400">${u.role}</span>
+            </div>
+        `).join('');
+    }
+
+    function toggleUserMenu() {
+        document.getElementById('user-menu').classList.toggle('show');
+    }
+
+    function selectUser(uid) {
+        currentUser = USERS.find(u => u.id === uid);
+        document.getElementById('current-user-avatar').innerText = currentUser.avatar;
+        document.getElementById('current-user-role').innerText = currentUser.role;
+        document.getElementById('user-menu').classList.remove('show');
+        
+        workflowEditMode = false;
+        document.getElementById('workflow-edit-controls').classList.add('hidden');
+        
+        currentReqId = null;
+        previousView = 'dashboard';
+        sourceView = 'dashboard';
+        
+        updateNavTabs();
+        renderDashboardGreeting();
+        navTo('dashboard');
+    }
+
+    function renderDashboardGreeting() {
+        const h = new Date().getHours();
+        let greeting = 'Good Morning';
+        if(h >= 12) greeting = 'Good Afternoon';
+        if(h >= 18) greeting = 'Good Evening';
+        document.getElementById('dashboard-greeting').innerText = `${greeting}! ${currentUser.name.split(' ')[0]}`;
+    }
+
+    // --- Dashboard ---
+    // Requirement 1: Sort by latest action time, new items first
+    function renderNotebooks() {
+        const container = document.getElementById('notebook-container');
+        container.innerHTML = '';
+
+        if (currentUser.role === 'Maker') {
+            const newCard = document.createElement('div');
+            newCard.className = 'notebook-card new-request';
+            newCard.innerHTML = `<span class="material-icons" style="font-size:48px;">add_circle_outline</span><div class="mt-2 font-bold">New Request</div>`;
+            newCard.onclick = () => createNewRequest();
+            container.appendChild(newCard);
+        }
+
+        let visibleRequests = requests.filter(req => {
+            if (req.status === 'Cancelled' || req.status === 'Approved' || req.status === 'Rejected') return false; 
+            if (currentUser.role === 'Maker' || currentUser.role === 'Reviewer' || currentUser.role === 'Manager') return true; 
+            
+            if (req.status === 'Returned') {
+                 return req.history.slice(0, req.stepIndex + 1).some(s => s.user === currentUser.name);
+            }
+            
+            const currentStepRole = req.history[req.stepIndex]?.role;
+            return currentStepRole === currentUser.role;
+        });
+
+        // Sorting Logic: Latest Updated First
+        visibleRequests.sort((a, b) => {
+            const getDate = (req) => {
+                const dates = req.history.filter(h => h.date).map(h => new Date(h.date).getTime());
+                return dates.length ? Math.max(...dates) : 0;
+            };
+            return getDate(b) - getDate(a);
+        });
+
+        visibleRequests.forEach(req => {
+            const isReturned = req.status === 'Returned';
+            const isMyTurn = req.history[req.stepIndex]?.role === currentUser.role && req.status !== 'Approved';
+            
+            const currentStepObj = req.history[req.stepIndex];
+            const nextApproverText = currentStepObj ? `Next: ${currentStepObj.user} (${currentStepObj.role})` : '';
+
+            const card = document.createElement('div');
+            card.className = `notebook-card ${isReturned ? 'returned' : ''} ${isMyTurn ? 'active-turn' : ''}`;
+            
+            let deleteBtnHtml = '';
+            if (currentUser.role === 'Maker' && req.status === 'Draft') {
+                deleteBtnHtml = `<div class="card-delete-btn" onclick="event.stopPropagation(); deleteDraft('${req.id}')"><span class="material-icons" style="font-size:18px;">delete</span></div>`;
+            }
+
+            const progressHTML = req.history.map((step, idx) => {
+                let statusClass = '';
+                if (step.status === 'Approved') statusClass = 'done';
+                else if (idx === req.stepIndex) statusClass = 'active';
+                else if (step.status === 'Returned') statusClass = 'rejected';
+                return `<div class="p-bar ${statusClass}"></div>`;
+            }).join('');
+
+            const limitText = `$${(req.currLimit/1000000).toFixed(0)}M to $${(req.propLimit/1000000).toFixed(0)}M`;
+
+            card.innerHTML = `
+                ${deleteBtnHtml}
+                <div class="flex justify-between items-start mb-2 pr-6">
+                    <h3 class="text-xl font-bold">${req.ticker}</h3>
+                    <span class="status-badge ${req.status === 'Pending' ? 'st-pending' : (req.status === 'Returned' ? 'st-rejected' : 'st-draft')}">
+                        ${req.status}
+                    </span>
+                </div>
+                <div class="text-sm text-gray-500 font-bold mb-1">${req.name}</div>
+                <div class="text-xs text-gray-400 mb-2">${req.id}</div>
+                
+                <div class="grid grid-cols-2 gap-2 mb-2 text-sm">
+                    <div>
+                         <span class="block text-gray-400 text-xs">Limit</span>
+                         <span class="font-medium text-gray-700">${limitText}</span>
+                    </div>
+                    <div>
+                         <span class="block text-gray-400 text-xs">Purpose</span>
+                         <span class="font-medium text-gray-700 truncate" title="${req.purpose}">${req.purpose}</span>
+                    </div>
+                </div>
+                
+                <div class="card-progress-area">
+                    <div class="next-approver-label">${nextApproverText}</div>
+                    <div class="progress-bars">${progressHTML}</div>
+                </div>
+            `;
+            card.onclick = () => openRequest(req.id, 'dashboard');
+            container.appendChild(card);
+        });
+    }
+
+    // --- Request Detail ---
+    function openRequest(reqId, fromView) {
+        if(fromView) sourceView = fromView;
+
+        workflowEditMode = false;
+        document.getElementById('workflow-edit-controls').classList.add('hidden');
+
+        currentReqId = reqId;
+        const req = requests.find(r => r.id === reqId);
+        if (!req) return;
+
+        document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+        document.getElementById('view-request-detail').style.display = 'block';
+        
+        const detailView = document.getElementById('view-request-detail');
+        detailView.classList.remove('active');
+        void detailView.offsetWidth; 
+        detailView.classList.add('active');
+
+        document.getElementById('detail-header-title').innerText = `${req.ticker} - ${req.name}`;
+
+        document.getElementById('frm-ticker').value = req.ticker;
+        document.getElementById('frm-name').value = req.name;
+        document.getElementById('frm-date').value = req.date || '';
+        document.getElementById('frm-curr-limit').value = req.currLimit.toLocaleString();
+        document.getElementById('frm-prop-limit').value = parseInt(req.propLimit).toLocaleString();
+        
+        const pSelect = document.getElementById('frm-purpose');
+        pSelect.value = req.purpose || 'New Credit Line';
+        handlePurposeChange(); 
+        if(req.sharedTickers) document.getElementById('frm-shared-tickers').value = req.sharedTickers;
+        if(req.sharedPurpose) document.getElementById('frm-shared-purpose').value = req.sharedPurpose;
+
+        const ptSelect = document.getElementById('frm-payterm-select');
+        const cust = CUSTOMER_DB[req.ticker];
+        const defaultPT = cust ? cust.payTerm : 'Net 30';
+        const knownTerms = ['Net 30', 'Net 60', 'Net 90'];
+        const reqTerm = req.paymentTerm || defaultPT;
+        
+        if(knownTerms.includes(reqTerm)) {
+            ptSelect.value = reqTerm;
+            document.getElementById('frm-payterm-other').classList.add('hidden');
+        } else {
+            ptSelect.value = 'Others';
+            document.getElementById('frm-payterm-other').classList.remove('hidden');
+            document.getElementById('frm-payterm-other').value = reqTerm;
+        }
+
+        // Requirement 2: Populate Header Inputs
+        document.getElementById('rev-header-name').value = req.name;
+        document.getElementById('rev-header-date').value = req.date || '';
+        document.getElementById('rev-header-parent').value = (req.parentCompany || (cust ? cust.name : '')); 
+        document.getElementById('rev-header-shared').value = req.sharedTickers || 'N/A';
+        
+        if(cust) {
+            document.getElementById('rev-code').value = cust.id;
+            document.getElementById('rev-region-am').value = `${cust.region} / ${cust.am}`;
+            document.getElementById('rev-since').value = cust.est;
+            document.getElementById('rev-last-rev').value = cust.lastRev;
+            document.getElementById('rev-next-rev').value = cust.nextRev;
+            document.getElementById('rev-rating').value = `${cust.intRating} / ${cust.rating}`;
+            document.getElementById('rev-credit-line').value = cust.creditLine.toLocaleString();
+            document.getElementById('rev-util').value = cust.util + '%';
+            document.getElementById('rev-ar').value = cust.ar.toLocaleString();
+            document.getElementById('rev-payterm').value = reqTerm;
+            document.getElementById('rev-domain').value = cust.domain;
+            const listingText = cust.listed ? `Listed (${cust.est})` : 'Private';
+            document.getElementById('rev-listed-display').value = listingText;
+        }
+        
+        quillPurpose.root.innerHTML = req.purpose + (req.sharedPurpose ? ` - ${req.sharedPurpose}` : '');
+
+        quillForecast.root.innerHTML = req.forecast || '';
+        quillBizDesc.root.innerHTML = req.bizDesc || '';
+        quillRisks.root.innerHTML = req.risks || '';
+        quillMitigants.root.innerHTML = req.mitigants || '';
+        quillRecommendation.root.innerHTML = req.recommendation || '';
+        quillActionComment.root.innerHTML = ''; 
+        
+        if(req.summary) quillSummary.root.innerHTML = req.summary;
+        else quillSummary.root.innerHTML = `<p><strong>Business Desc.:</strong></p><p>Insert details here...</p>`;
+
+        document.getElementById('req-prepared-by').value = req.reqPreparedBy || 'Tim Cook';
+        document.getElementById('rev-prepared-by').value = req.revPreparedBy || 'Jensen Huang';
+
+        // --- Permission Logic ---
+        const isMaker = currentUser.role === 'Maker';
+        const isReviewer = currentUser.role === 'Reviewer';
+        const isAtMyStep = req.history[req.stepIndex] && req.history[req.stepIndex].role === currentUser.role && req.status !== 'Approved';
+        const isDraft = req.status === 'Draft' || req.status === 'Returned';
+        const isCompleted = req.status === 'Approved' || req.status === 'Rejected' || req.status === 'Cancelled';
+        
+        const setQuill = (quill, wrapperId, editable) => {
+            quill.enable(editable);
+            const wrapper = document.getElementById(wrapperId);
+            if(wrapper) {
+                const btn = wrapper.querySelector('.editor-expand-btn');
+                if(editable) {
+                    wrapper.classList.remove('readonly');
+                    if(btn) btn.style.display = 'flex';
+                } else {
+                    wrapper.classList.add('readonly');
+                    if(btn) btn.style.display = 'none';
+                }
+            }
+        };
+
+        const canEditReqForm = isMaker && isDraft && isAtMyStep && !isCompleted;
+        const canEditReviewForm = isReviewer && isAtMyStep && !isCompleted;
+
+        toggleInputs('pane-req-form', canEditReqForm);
+        
+        // Requirement 2: Toggle inputs including new header fields for Reviewer
+        toggleInputs('pane-review-form', canEditReviewForm);
+        
+        // Ensure header inputs are toggled for Reviewer
+        const revHeaderInputs = [
+            'rev-header-name', 'rev-header-date', 'rev-header-parent', 'rev-header-shared'
+        ];
+        revHeaderInputs.forEach(id => {
+            document.getElementById(id).readOnly = !canEditReviewForm;
+        });
+
+        const mcapInputs = document.querySelectorAll('.mcap-container input');
+        mcapInputs.forEach(i => i.readOnly = !canEditReviewForm);
+
+        setQuill(quillForecast, 'wrapper-forecast', canEditReqForm);
+        setQuill(quillBizDesc, 'wrapper-biz-desc', canEditReqForm);
+
+        setQuill(quillRisks, 'wrapper-risks', canEditReviewForm);
+        setQuill(quillMitigants, 'wrapper-mitigants', canEditReviewForm);
+        setQuill(quillRecommendation, 'wrapper-recommendation', canEditReviewForm);
+        setQuill(quillPurpose, 'wrapper-purpose', canEditReviewForm);
+        
+        setQuill(quillSummary, 'wrapper-summary', canEditReviewForm);
+        
+        // Requirement 3: Comment box expand logic
+        setQuill(quillActionComment, 'wrapper-action-comment', (canEditReqForm || canEditReviewForm || isAtMyStep)); // If I can act, I can comment
+
+        // Requirement 4: Save button removed (handled via CSS/HTML removal), keeping logic for auto-save
+        
+        document.getElementById('req-prepared-by').readOnly = !canEditReqForm;
+        document.getElementById('rev-prepared-by').readOnly = !canEditReviewForm;
+
+        if (canEditReqForm && req.purpose === 'New Credit Line') {
+             document.getElementById('frm-curr-limit').readOnly = true;
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        if(canEditReqForm) dropZone.classList.remove('hidden');
+        else dropZone.classList.add('hidden');
+
+        const revUploadSection = document.getElementById('reviewer-upload-section');
+        if(canEditReviewForm) revUploadSection.classList.remove('hidden');
+        else revUploadSection.classList.add('hidden');
+
+        renderFileList(req, 'request', 'file-list-area', canEditReqForm);
+        renderFileList(req, 'review', 'reviewer-file-list-area', canEditReviewForm);
+
+        const btnEditWf = document.getElementById('btn-edit-workflow');
+        if (currentUser.role === 'Reviewer') btnEditWf.classList.remove('hidden');
+        else btnEditWf.classList.add('hidden');
+
+        if (canEditReqForm) {
+            autoAdjustWorkflow(req);
+        }
+
+        renderWorkflowSidebar(req);
+        switchInternalTab('req-form', document.querySelector('.internal-tab'));
+    }
+
+    function toggleInputs(containerId, enable) {
+        const container = document.getElementById(containerId);
+        const inputs = container.querySelectorAll('input, select');
+        inputs.forEach(inp => {
+            if(inp.parentElement.classList.contains('mcap-cell')) return; 
+            if(inp.id.includes('prepared-by')) return;
+            if(inp.id.includes('rev-header-')) return; // Handled separately
+
+            inp.readOnly = !enable;
+            if(inp.tagName === 'SELECT') inp.disabled = !enable;
+        });
+    }
+
+    // Requirement 3: Quill Expand Logic
+    function openExpandedEditor(wrapperId) {
+        let sourceQuill;
+        if(wrapperId === 'wrapper-forecast') sourceQuill = quillForecast;
+        else if(wrapperId === 'wrapper-biz-desc') sourceQuill = quillBizDesc;
+        else if(wrapperId === 'wrapper-risks') sourceQuill = quillRisks;
+        else if(wrapperId === 'wrapper-mitigants') sourceQuill = quillMitigants;
+        else if(wrapperId === 'wrapper-recommendation') sourceQuill = quillRecommendation;
+        else if(wrapperId === 'wrapper-purpose') sourceQuill = quillPurpose;
+        else if(wrapperId === 'wrapper-summary') sourceQuill = quillSummary;
+        else if(wrapperId === 'wrapper-action-comment') sourceQuill = quillActionComment;
+
+        if(sourceQuill) {
+            expandedSourceQuill = sourceQuill;
+            document.getElementById('expanded-editor-modal').style.display = 'flex';
+            expandedQuill.root.innerHTML = sourceQuill.root.innerHTML;
+            expandedQuill.setSelection(0);
+            expandedQuill.focus();
+        }
+    }
+
+    function closeExpandedEditor() {
+        document.getElementById('expanded-editor-modal').style.display = 'none';
+        if(expandedSourceQuill) {
+             expandedSourceQuill.root.innerHTML = expandedQuill.root.innerHTML;
+             expandedSourceQuill = null;
+        }
+    }
+
+    function handleLimitChange() {
+        const req = requests.find(r => r.id === currentReqId);
+        if(!req) return;
+        
+        const isMakerDraft = currentUser.role === 'Maker' && (req.status === 'Draft' || req.status === 'Returned');
+        
+        if (isMakerDraft) {
+    		req.propLimit = parseInt(document.getElementById('frm-prop-limit').value.replace(/,/g, '')) || 0;
+    		autoAdjustWorkflow(req);
+        }
+    }
+
+    function autoAdjustWorkflow(req) {
+        const limit = parseInt(req.propLimit) || 0;
+        const requiredRule = APPROVAL_MATRIX.find(r => limit >= r.limit) || APPROVAL_MATRIX[APPROVAL_MATRIX.length-1];
+        const requiredRoles = requiredRule.roles; 
+
+        const newHistory = [];
+        newHistory.push(req.history[0]);
+
+        for (let i = 1; i < requiredRoles.length; i++) {
+            const role = requiredRoles[i];
+            const existingStep = req.history.slice(1).find(step => step.role === role);
+            
+            if (existingStep) {
+                newHistory.push(existingStep);
+            } else {
+                const defaultUser = USERS.find(u => u.role === role);
+                newHistory.push({ 
+                    role: role, 
+                    user: defaultUser ? defaultUser.name : 'Unknown', 
+                    status: 'Pending', 
+                    date: null 
+                });
+            }
+        }
+        req.history = newHistory;
+        renderWorkflowSidebar(req);
+    }
+
+    function handlePurposeChange() {
+        const val = document.getElementById('frm-purpose').value;
+        const req = requests.find(r => r.id === currentReqId);
+        const isEdit = currentUser.role === 'Maker' && (req.status === 'Draft' || req.status === 'Returned');
+
+        if (isEdit) {
+            if(val === 'New Credit Line') {
+                document.getElementById('frm-curr-limit').value = 0;
+                document.getElementById('frm-curr-limit').readOnly = true;
+                req.currLimit = 0;
+            } else if (val === 'Credit Line Change') {
+                const ticker = document.getElementById('frm-ticker').value;
+                if(ticker && CUSTOMER_DB[ticker]) {
+                     document.getElementById('frm-curr-limit').value = CUSTOMER_DB[ticker].creditLine.toLocaleString();
+                     req.currLimit = CUSTOMER_DB[ticker].creditLine;
+                }
+                document.getElementById('frm-curr-limit').readOnly = false;
+            } else {
+                document.getElementById('frm-curr-limit').readOnly = false;
+            }
+            handleLimitChange();
+        }
+
+        if(val === 'Add New Entity to Share') {
+            document.getElementById('shared-entity-row').classList.remove('hidden');
+            document.getElementById('shared-purpose-row').classList.remove('hidden');
+        } else {
+            document.getElementById('shared-entity-row').classList.add('hidden');
+            document.getElementById('shared-purpose-row').classList.add('hidden');
+        }
+    }
+
+    function handlePayTermChange() {
+        const val = document.getElementById('frm-payterm-select').value;
+        const otherInput = document.getElementById('frm-payterm-other');
+        if(val === 'Others') otherInput.classList.remove('hidden');
+        else otherInput.classList.add('hidden');
+    }
+
+    function handleTickerInput(input) {
+        const val = input.value.toUpperCase();
+        const cust = CUSTOMER_DB[val];
+        if (cust) {
+            document.getElementById('frm-name').value = cust.name;
+            const purpose = document.getElementById('frm-purpose').value;
+            if(purpose !== 'New Credit Line') {
+                document.getElementById('frm-curr-limit').value = cust.creditLine.toLocaleString();
+    			document.getElementById('frm-prop-limit').value = cust.creditLine.toLocaleString();
+    			handleLimitChange();
+            }
+        } 
+    }
+
+    // --- File Upload Logic ---
+    function handleDragOver(e) {
+        e.preventDefault(); e.stopPropagation();
+        e.currentTarget.classList.add('dragover');
+    }
+
+    function handleDragLeave(e) {
+        e.preventDefault(); e.stopPropagation();
+        e.currentTarget.classList.remove('dragover');
+    }
+
+    function handleDrop(e, category) {
+        e.preventDefault(); e.stopPropagation();
+        e.currentTarget.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        handleFiles(files, category);
+    }
+
+    function handleFileSelect(e, category) {
+        const files = e.target.files;
+        handleFiles(files, category);
+    }
+
+    function handleFiles(fileList, category) {
+        const req = requests.find(r => r.id === currentReqId);
+        if(!req.files) req.files = [];
+        
+        Array.from(fileList).forEach(f => {
+            const reader = new FileReader();
+            let type = 'pdf';
+            if(f.name.endsWith('.xls') || f.name.endsWith('.xlsx')) type = 'xls';
+            if(f.name.endsWith('.doc') || f.name.endsWith('.docx')) type = 'doc';
+
+            reader.onload = function(e) {
+                req.files.push({ name: f.name, type: type, data: e.target.result, category: category || 'request' });
+                const canEditReq = currentUser.role === 'Maker'; 
+                const canEditRev = currentUser.role === 'Reviewer';
+                renderFileList(req, 'request', 'file-list-area', canEditReq);
+                renderFileList(req, 'review', 'reviewer-file-list-area', canEditRev);
+            };
+            
+            if(type === 'xls') reader.readAsArrayBuffer(f);
+            else if (type === 'doc') reader.readAsArrayBuffer(f);
+            else reader.readAsDataURL(f);
+        });
+    }
+
+    function renderFileList(req, category, containerId, canEdit) {
+        const container = document.getElementById(containerId);
+        if(!container) return;
+        
+        const filteredFiles = (req.files || []).filter(f => (f.category || 'request') === category);
+        
+        container.innerHTML = filteredFiles.map((f, index) => {
+            const mainIndex = req.files.indexOf(f);
+            
+            let icon = 'description';
+            let color = 'text-gray-500';
+            if(f.type === 'pdf') { icon = 'picture_as_pdf'; color = 'text-red-500'; }
+            if(f.type === 'xls') { icon = 'table_chart'; color = 'text-green-600'; }
+            if(f.type === 'doc') { icon = 'article'; color = 'text-blue-600'; }
+            
+            const deleteBtn = canEdit ? 
+                `<span class="material-icons text-gray-400 hover:text-red-500 cursor-pointer ml-auto file-delete-btn" style="font-size:18px;" onclick="event.stopPropagation(); deleteFile(${mainIndex}, '${category}', '${containerId}')">close</span>` : '';
+
+            return `
+            <div class="flex items-center gap-2 p-2 border rounded bg-gray-50 cursor-pointer hover:bg-blue-50 transition w-full sm:w-auto"
+                 onclick="openFilePreview(${mainIndex})">
+                <span class="material-icons ${color}" style="font-size:20px;">${icon}</span>
+                <span class="text-sm font-medium underline text-blue-700 truncate" style="max-width:150px;">${f.name}</span>
+                ${deleteBtn}
+            </div>
+        `}).join('');
+    }
+
+    function deleteFile(index, category, containerId) {
+        if(confirm('Delete this file?')) {
+            const req = requests.find(r => r.id === currentReqId);
+            req.files.splice(index, 1);
+            const canEdit = (category === 'request' && currentUser.role === 'Maker') || (category === 'review' && currentUser.role === 'Reviewer');
+            renderFileList(req, category, containerId, canEdit);
+        }
+    }
+
+    let currentWorkbook = null;
+
+    function openFilePreview(fileIndex) {
+        const req = requests.find(r => r.id === currentReqId);
+        const file = req.files[fileIndex];
+        if(!file) return;
+
+        const modal = document.getElementById('preview-modal');
+        const body = document.getElementById('preview-body');
+        const title = document.getElementById('preview-filename');
+        const icon = document.getElementById('preview-icon');
+        const tabsContainer = document.getElementById('excel-tabs');
+
+        title.innerText = file.name;
+        modal.style.display = 'flex';
+        body.innerHTML = '<div class="text-gray-500">Loading preview...</div>';
+        
+        tabsContainer.innerHTML = '';
+        tabsContainer.classList.add('hidden');
+
+        if(file.type === 'pdf') {
+            icon.innerText = 'picture_as_pdf';
+            icon.className = 'material-icons text-red-500';
+            body.innerHTML = `<iframe src="${file.data}" width="100%" height="100%" style="border:none;"></iframe>`;
+        } else if (file.type === 'xls') {
+            icon.innerText = 'table_chart';
+            icon.className = 'material-icons text-green-600';
+            try {
+                currentWorkbook = XLSX.read(file.data, {type: 'array'});
+                if(currentWorkbook.SheetNames.length > 0) {
+                    tabsContainer.classList.remove('hidden');
+                    currentWorkbook.SheetNames.forEach((sheetName, idx) => {
+                        const tab = document.createElement('div');
+                        tab.className = `sheet-tab ${idx === 0 ? 'active' : ''}`;
+                        tab.innerText = sheetName;
+                        tab.onclick = () => renderSheet(sheetName);
+                        tabsContainer.appendChild(tab);
+                    });
+                    renderSheet(currentWorkbook.SheetNames[0]);
+                }
+            } catch(e) {
+                body.innerHTML = '<div class="text-red-500">Error parsing Excel file. Ensure it is a valid .xlsx file.</div>';
+            }
+        } else if (file.type === 'doc') {
+            icon.innerText = 'article';
+            icon.className = 'material-icons text-blue-600';
+            mammoth.convertToHtml({arrayBuffer: file.data})
+                .then(function(result){
+                    body.innerHTML = `<div style="background:white; padding:40px; width:100%; max-width:800px; margin:0 auto; box-shadow:0 0 10px rgba(0,0,0,0.1); min-height:100%; overflow:auto;">${result.value}</div>`;
+                })
+                .catch(function(err){
+                    body.innerHTML = '<div class="text-red-500">Error parsing Word file. Ensure it is a valid .docx file.</div>';
+                });
+        }
+    }
+
+    function renderSheet(sheetName) {
+        const body = document.getElementById('preview-body');
+        const sheet = currentWorkbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+        if(!json || json.length === 0) {
+            body.innerHTML = '<div class="p-4 text-gray-500">Empty Sheet</div>';
+            return;
+        }
+        let maxCols = 0;
+        json.forEach(row => { if(row.length > maxCols) maxCols = row.length; });
+        const getColName = (n) => {
+            let s = "";
+            while(n >= 0) {
+                s = String.fromCharCode(n % 26 + 65) + s;
+                n = Math.floor(n / 26) - 1;
+            }
+            return s;
+        };
+        let html = '<table class="excel-table">';
+        html += '<tr><th class="excel-row-num"></th>'; 
+        for(let i=0; i<maxCols; i++) {
+            html += `<th class="excel-header">${getColName(i)}</th>`;
+        }
+        html += '</tr>';
+        json.forEach((row, rowIndex) => {
+            html += `<tr><td class="excel-row-num">${rowIndex + 1}</td>`;
+            for(let i=0; i<maxCols; i++) {
+                const cellVal = row[i] !== undefined ? row[i] : "";
+                html += `<td>${cellVal}</td>`;
+            }
+            html += '</tr>';
+        });
+        html += '</table>';
+        body.innerHTML = `<div style="background:white; padding:20px; min-height:100%; width:fit-content; min-width:100%; box-shadow:0 0 5px rgba(0,0,0,0.05);">${html}</div>`;
+        document.querySelectorAll('.sheet-tab').forEach(t => {
+            if(t.innerText === sheetName) t.classList.add('active');
+            else t.classList.remove('active');
+        });
+    }
+
+    function closePreview(e) {
+        if (!e || e.target.id === 'preview-modal' || e.target.closest('.btn-ghost')) document.getElementById('preview-modal').style.display = 'none';
+    }
+
+    function toggleWorkflowEditMode() {
+        workflowEditMode = !workflowEditMode;
+        const controls = document.getElementById('workflow-edit-controls');
+        if(workflowEditMode) controls.classList.remove('hidden');
+        else controls.classList.add('hidden');
+        
+        const req = requests.find(r => r.id === currentReqId);
+        renderWorkflowSidebar(req);
+    }
+
+    function addWorkflowStep() {
+        const req = requests.find(r => r.id === currentReqId);
+        req.history.push({ role: 'Reviewer', user: 'New User', status: 'Pending', date: null });
+        renderWorkflowSidebar(req);
+    }
+
+    function removeWorkflowStep(idx) {
+        const req = requests.find(r => r.id === currentReqId);
+        if(idx <= req.stepIndex) return alert("Cannot remove completed or active steps.");
+        req.history.splice(idx, 1);
+        renderWorkflowSidebar(req);
+    }
+    
+    function moveStep(idx, direction) {
+        const req = requests.find(r => r.id === currentReqId);
+        const targetIdx = idx + direction;
+        if(idx <= req.stepIndex || targetIdx <= req.stepIndex) return; 
+        if(targetIdx >= req.history.length) return;
+
+        const temp = req.history[idx];
+        req.history[idx] = req.history[targetIdx];
+        req.history[targetIdx] = temp;
+        renderWorkflowSidebar(req);
+    }
+
+    function openUserAssignModal(idx) {
+        if(!workflowEditMode && currentUser.role !== 'Reviewer') return; 
+        editingStepIndex = idx;
+        const modal = document.getElementById('user-select-modal');
+        modal.style.display = 'flex';
+        document.getElementById('user-search-input').value = '';
+        filterUserList(); 
+    }
+
+    function closeUserSelect(e) {
+        if(!e || e.target.id === 'user-select-modal' || e.target.closest('.btn-ghost')) {
+            document.getElementById('user-select-modal').style.display = 'none';
+        }
+    }
+
+    function filterUserList() {
+        const search = document.getElementById('user-search-input').value.toLowerCase();
+        const list = document.getElementById('user-select-list');
+        const allUsers = [...USERS, {id:'9999', name:'Zack External', role:'Consultant', avatar:'Z'}];
+        
+        list.innerHTML = allUsers.filter(u => u.name.toLowerCase().includes(search)).map(u => `
+            <div class="p-2 hover:bg-gray-100 cursor-pointer flex justify-between" onclick="assignUser('${u.name}')">
+                <span>${u.name}</span>
+                <span class="text-xs text-gray-500">${u.role}</span>
+            </div>
+        `).join('');
+    }
+
+    function assignUser(userName) {
+        commitAssign(userName);
+    }
+
+    function assignCustomUser() {
+        const inputVal = document.getElementById('user-search-input').value.trim();
+        if(inputVal) commitAssign(inputVal);
+    }
+
+    function commitAssign(userName) {
+        const req = requests.find(r => r.id === currentReqId);
+        if(editingStepIndex > -1 && req.history[editingStepIndex]) {
+            req.history[editingStepIndex].user = userName;
+            if(editingStepIndex === req.stepIndex) req.history[editingStepIndex].comment = `(Reassigned to ${userName})`;
+            renderWorkflowSidebar(req);
+        }
+        document.getElementById('user-select-modal').style.display = 'none';
+    }
+
+    function validateWorkflow(req) {
+        const limit = parseInt(req.propLimit) || 0;
+        const requiredRule = APPROVAL_MATRIX.find(r => limit >= r.limit) || APPROVAL_MATRIX[APPROVAL_MATRIX.length-1];
+        const missing = requiredRule.roles.filter(role => !req.history.some(h => h.role === role));
+        if(missing.length > 0) {
+            return `Warning: The workflow is missing mandatory roles for this amount: ${missing.join(', ')}.`;
+        }
+        return null;
+    }
+
+    function renderWorkflowSidebar(req) {
+        const list = document.getElementById('workflow-list');
+        list.innerHTML = req.history.map((step, idx) => {
+            let icon = 'radio_button_unchecked';
+            let colorClass = 'text-gray-400';
+
+            if (step.status === 'Approved') { icon = 'check_circle'; colorClass = 'text-green-600'; }
+            if (step.status === 'Returned') { icon = 'cancel'; colorClass = 'text-red-600'; }
+            if (step.status === 'Cancelled') { icon = 'block'; colorClass = 'text-gray-500'; }
+            if (idx === req.stepIndex && req.status !== 'Approved' && req.status !== 'Cancelled') { icon = 'play_circle_filled'; colorClass = 'text-blue-600'; }
+
+            let actionsHtml = '';
+            const canEdit = workflowEditMode && idx > req.stepIndex; 
+            const canDelegate = currentUser.role === 'Reviewer' && idx >= req.stepIndex && step.status === 'Pending';
+            
+            if(canEdit || canDelegate) {
+                 actionsHtml += `<span class="delegation-btn" onclick="openUserAssignModal(${idx})">Assign</span>`;
+            }
+
+            if(workflowEditMode && idx > req.stepIndex) {
+                actionsHtml += `<span class="material-icons wf-control-btn" onclick="moveStep(${idx}, -1)">arrow_upward</span>`;
+                actionsHtml += `<span class="material-icons wf-control-btn" onclick="moveStep(${idx}, 1)">arrow_downward</span>`;
+                actionsHtml += `<span class="material-icons wf-control-btn wf-delete-btn" onclick="removeWorkflowStep(${idx})">close</span>`;
+            }
+
+            return `
+                <div class="wf-item">
+                    <div class="wf-icon"><span class="material-icons ${colorClass}">${icon}</span></div>
+                    <div class="wf-details">
+                        <div class="wf-role">
+                            <span>${step.role}</span>
+                            <div class="flex items-center">${actionsHtml}</div>
+                        </div>
+                        <div class="wf-meta">${step.user}</div>
+                        ${step.date ? `<div class="wf-time">${step.date}</div>` : ''}
+                        ${step.comment ? `<div class="wf-comment">"${step.comment}"</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const currentStepRole = req.history[req.stepIndex] ? req.history[req.stepIndex].role : '';
+        const actionArea = document.getElementById('workflow-actions');
+        
+        const makerButtons = document.getElementById('maker-action-buttons');
+        const standardButtons = document.getElementById('standard-action-buttons');
+
+        document.getElementById('return-confirm-area').classList.add('hidden');
+        document.getElementById('return-options').classList.add('hidden');
+        makerButtons.classList.add('hidden');
+        standardButtons.classList.add('flex');
+        standardButtons.classList.remove('hidden');
+
+        if (currentUser.role === currentStepRole && req.status !== 'Approved' && req.status !== 'Cancelled') {
+            actionArea.style.display = 'block';
+            
+            if (currentUser.role === 'Maker') {
+                standardButtons.classList.add('hidden'); 
+                if(req.status === 'Returned') {
+                    makerButtons.classList.remove('hidden');
+                    makerButtons.classList.add('flex');
+                } else {
+                    standardButtons.classList.remove('hidden');
+                    document.getElementById('btn-approve').innerText = 'Submit Application';
+                    document.getElementById('btn-return').style.display = 'none';
+                }
+            } else {
+                document.getElementById('btn-approve').innerText = 'Approve';
+                document.getElementById('btn-return').style.display = 'inline-flex';
+                document.getElementById('btn-return').innerText = 'Return';
+            }
+        } else {
+            actionArea.style.display = 'none';
+        }
+    }
+
+    function openSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'flex';
+    }
+
+    function closeSettingsModal(e) {
+        if(!e || e.target.id === 'settings-modal' || e.target.closest('.btn-ghost')) {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+    }
+
+    // --- Action Logic ---
+    let returnMode = false;
+
+    function toggleReturnMode() {
+        returnMode = true;
+        document.getElementById('standard-action-buttons').classList.add('hidden');
+        document.getElementById('return-confirm-area').classList.remove('hidden');
+        document.getElementById('return-options').classList.remove('hidden');
+
+        const req = requests.find(r => r.id === currentReqId);
+        const select = document.getElementById('return-target-step');
+        select.innerHTML = '';
+        
+        const optMaker = document.createElement('option');
+        optMaker.value = 0;
+        optMaker.text = "Maker (Tim Cook)";
+        select.appendChild(optMaker);
+
+        for(let i=1; i < req.stepIndex; i++) {
+            const step = req.history[i];
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.text = `${step.role} (${step.user})`;
+            select.appendChild(opt);
+        }
+    }
+
+    function cancelReturnMode() {
+        returnMode = false;
+        document.getElementById('standard-action-buttons').classList.remove('hidden');
+        document.getElementById('return-confirm-area').classList.add('hidden');
+        document.getElementById('return-options').classList.add('hidden');
+    }
+
+    function processAction(action) {
+        const req = requests.find(r => r.id === currentReqId);
+        
+        if(action === 'approve') {
+            const warning = validateWorkflow(req);
+            if(warning) {
+                if(!confirm(warning + "\n\nDo you still want to proceed?")) return;
+            }
+        }
+
+        const step = req.history[req.stepIndex];
+        const commentText = quillActionComment.getText().trim();
+        
+        const now = new Date();
+        const timestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+
+        if (action === 'approve') {
+            if(currentUser.role === 'Maker' && !document.getElementById('frm-ticker').value) return alert('Ticker is required');
+            
+            step.comment = commentText ? commentText : ''; 
+            step.status = 'Approved';
+            step.date = timestamp;
+            
+            if (req.stepIndex < req.history.length - 1) {
+                req.stepIndex++;
+                req.status = 'Pending';
+                req.history[req.stepIndex].status = 'Pending';
+            } else {
+                req.status = 'Approved';
+            }
+        } else {
+            step.status = 'Returned';
+            step.date = timestamp;
+            step.comment = commentText ? commentText : 'Returned';
+            
+            const returnTargetIndex = parseInt(document.getElementById('return-target-step').value || 0);
+            req.stepIndex = returnTargetIndex;
+            req.status = 'Returned';
+            req.history[returnTargetIndex].status = 'Pending'; 
+            
+            cancelReturnMode();
+        }
+
+        commitSave(true); // Save all fields including Reviewer fields
+
+        quillActionComment.root.innerHTML = '';
+        renderWorkflowSidebar(req);
+        handleBackNav(); 
+    }
+
+    function cancelRequest() {
+         if(confirm('Cancel this returned request? It will be moved to history.')) {
+            const req = requests.find(r => r.id === currentReqId);
+            req.status = 'Cancelled';
+            const now = new Date();
+            req.history.push({ role: 'Maker', user: currentUser.name, status: 'Cancelled', date: now.toLocaleString(), comment: 'Cancelled by Maker' });
+            handleBackNav();
+         }
+    }
+
+    function createNewRequest() {
+        const newId = `REQ-2025-${requests.length+1}`.padStart(3,'0');
+        const newReq = {
+            id: newId, ticker: '', name: '', status: 'Draft', stepIndex: 0,
+            currLimit: 0, propLimit: 0, purpose: 'New Credit Line', date: new Date().toISOString().split('T')[0],
+            forecast: '', bizDesc: '', risks: '', mitigants: '', recommendation: '', summary: '', files: [],
+            history: WORKFLOW_ROLES.map(role => ({ role, user: USERS.find(u=>u.role===role).name, status: 'Pending', date: null }))
+        };
+        newReq.history[0].status = 'Pending';
+        requests.push(newReq);
+        
+        autoAdjustWorkflow(newReq);
+        
+        renderNotebooks();
+    }
+    
+    // Save logic updated to include Requirement 2 fields
+    function commitSave(silent) {
+        const req = requests.find(r => r.id === currentReqId);
+        if(req) {
+             if (currentUser.role === 'Maker') {
+                 req.ticker = document.getElementById('frm-ticker').value;
+                 req.name = document.getElementById('frm-name').value;
+                 req.propLimit = parseInt(document.getElementById('frm-prop-limit').value.replace(/,/g, '')) || 0;
+                 req.currLimit = parseInt(document.getElementById('frm-curr-limit').value.replace(/,/g,'')) || 0;
+                 req.date = document.getElementById('frm-date').value;
+                 req.purpose = document.getElementById('frm-purpose').value;
+                 
+                 if(req.purpose === 'Add New Entity to Share') {
+                     req.sharedTickers = document.getElementById('frm-shared-tickers').value;
+                     req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
+                 }
+                 
+                 const ptVal = document.getElementById('frm-payterm-select').value;
+                 req.paymentTerm = (ptVal === 'Others') ? document.getElementById('frm-payterm-other').value : ptVal;
+
+                 req.forecast = quillForecast.root.innerHTML;
+                 req.bizDesc = quillBizDesc.root.innerHTML;
+                 req.reqPreparedBy = document.getElementById('req-prepared-by').value;
+                 
+                 autoAdjustWorkflow(req);
+             } else if (currentUser.role === 'Reviewer') {
+                 // Reviewer fields save
+                 req.risks = quillRisks.root.innerHTML;
+                 req.mitigants = quillMitigants.root.innerHTML;
+                 req.recommendation = quillRecommendation.root.innerHTML;
+                 req.purpose = quillPurpose.root.innerHTML; 
+                 req.summary = quillSummary.root.innerHTML; 
+                 req.revPreparedBy = document.getElementById('rev-prepared-by').value;
+                 
+                 // New Header Inputs Save
+                 req.name = document.getElementById('rev-header-name').value; // Sync name back
+                 req.date = document.getElementById('rev-header-date').value;
+                 req.parentCompany = document.getElementById('rev-header-parent').value;
+                 req.sharedTickers = document.getElementById('rev-header-shared').value;
+             }
+
+             if (!silent) alert('Saved!');
+        }
+    }
+
+    function saveDraft() {
+        commitSave(false);
+    }
+
+    function deleteDraft(targetId) {
+        if(confirm('Are you sure you want to delete this draft?')) {
+            requests = requests.filter(r => r.id !== targetId);
+            renderNotebooks();
+        }
+    }
+
+    // --- Helpers ---
+    function switchInternalTab(paneId, tabEl) {
+        document.querySelectorAll('.internal-tab').forEach(t => t.classList.remove('active'));
+        tabEl.classList.add('active');
+        document.querySelectorAll('.internal-pane').forEach(p => p.classList.remove('active'));
+        document.getElementById(`pane-${paneId}`).classList.add('active');
+    }
+
+    function renderCustomerMaster() {
+        const tbody = document.getElementById('master-table-body');
+        tbody.innerHTML = Object.values(CUSTOMER_DB).map(c => `
+            <tr>
+                <td class="font-bold">${c.id}</td><td>${c.name}</td><td>${c.family}</td><td>${c.region}</td>
+                <td>${c.sector}</td><td>${c.domain}</td><td>${c.am}</td>
+                <td>$${(c.creditLine/1000000).toFixed(1)}M</td><td>$${(c.ar/1000000).toFixed(1)}M</td>
+                <td>${c.util}%</td><td>${c.lastRev}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Requirement 6: History Table with Filters, Sort, Column Config
+    function renderHistorical() {
+        const thead = document.getElementById('historical-thead');
+        const tbody = document.getElementById('historical-list');
+        
+        // Filters
+        const fTicker = document.getElementById('hist-filter-ticker').value.toLowerCase();
+        const fPurpose = document.getElementById('hist-filter-purpose').value;
+        const fStatus = document.getElementById('hist-filter-status').value;
+
+        // Prepare Data
+        let data = requests.map(r => {
+             const lastStep = r.history.filter(h => h.status !== 'Pending').pop() || r.history[r.history.length-1];
+             return {
+                 id: r.id,
+                 ticker: r.ticker,
+                 company: r.name,
+                 purpose: r.purpose,
+                 creditLine: parseInt(r.propLimit),
+                 finalDate: lastStep.date || '-',
+                 approveBy: lastStep.user,
+                 status: r.status,
+                 rawObj: r
+             };
+        });
+
+        // Apply Filter
+        data = data.filter(d => {
+            if(fTicker && !d.ticker.toLowerCase().includes(fTicker)) return false;
+            if(fPurpose && d.purpose !== fPurpose) return false;
+            if(fStatus && d.status !== fStatus) return false;
+            return true;
+        });
+
+        // Apply Sort
+        const sortCol = historyConfig.sort.column;
+        const sortDir = historyConfig.sort.dir;
+        
+        data.sort((a,b) => {
+            let valA = a[sortCol];
+            let valB = b[sortCol];
+            if(typeof valA === 'string') valA = valA.toLowerCase();
+            if(typeof valB === 'string') valB = valB.toLowerCase();
+            
+            if(valA < valB) return sortDir === 'asc' ? -1 : 1;
+            if(valA > valB) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Render Header
+        let headerHtml = '<tr>';
+        historyConfig.columns.forEach(col => {
+            if(!col.visible) return;
+            const sortIcon = (col.id === sortCol) ? (sortDir==='asc'?'arrow_drop_up':'arrow_drop_down') : '';
+            headerHtml += `<th onclick="sortHistorical('${col.id}')">${col.label} <span class="material-icons align-middle text-sm">${sortIcon}</span></th>`;
+        });
+        headerHtml += '<th>Action</th></tr>';
+        thead.innerHTML = headerHtml;
+
+        // Render Body
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${historyConfig.columns.filter(c=>c.visible).length + 1}" class="p-4 text-center text-gray-500">No records found.</td></tr>`;
+        } else {
+            tbody.innerHTML = data.map(row => {
+                let rowHtml = `<tr class="cursor-pointer" onclick="openRequest('${row.id}', 'historical')">`;
+                historyConfig.columns.forEach(col => {
+                    if(!col.visible) return;
+                    let val = row[col.id];
+                    if(col.id === 'creditLine') val = '$' + val.toLocaleString();
+                    if(col.id === 'status') val = `<span class="status-badge ${val==='Approved'?'st-approved':(val==='Rejected'?'st-rejected':(val==='Cancelled'?'st-cancelled':'st-draft'))}">${val}</span>`;
+                    rowHtml += `<td>${val}</td>`;
+                });
+                rowHtml += `<td><button class="btn btn-ghost btn-sm text-xs">View</button></td></tr>`;
+                return rowHtml;
+            }).join('');
+        }
+    }
+
+    function sortHistorical(columnId) {
+        if(historyConfig.sort.column === columnId) {
+            historyConfig.sort.dir = historyConfig.sort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            historyConfig.sort.column = columnId;
+            historyConfig.sort.dir = 'desc'; // Default new sort to desc
+        }
+        renderHistorical();
+    }
+
+    function openColumnConfig() {
+        const modal = document.getElementById('column-config-modal');
+        const list = document.getElementById('col-config-list');
+        list.innerHTML = historyConfig.columns.map((col, idx) => `
+            <div class="flex items-center gap-2 p-1 border-b">
+                <input type="checkbox" id="col-cb-${col.id}" ${col.visible ? 'checked' : ''}>
+                <label for="col-cb-${col.id}" class="flex-1 text-sm">${col.label}</label>
+                <span class="material-icons cursor-pointer text-gray-400 text-sm hover:text-black" onclick="moveColConfig(${idx}, -1)">arrow_upward</span>
+                <span class="material-icons cursor-pointer text-gray-400 text-sm hover:text-black" onclick="moveColConfig(${idx}, 1)">arrow_downward</span>
+            </div>
+        `).join('');
+        modal.style.display = 'flex';
+    }
+    
+    function moveColConfig(idx, dir) {
+        const target = idx + dir;
+        if(target < 0 || target >= historyConfig.columns.length) return;
+        const temp = historyConfig.columns[idx];
+        historyConfig.columns[idx] = historyConfig.columns[target];
+        historyConfig.columns[target] = temp;
+        openColumnConfig(); // Re-render list
+    }
+
+    function applyColumnConfig() {
+        historyConfig.columns.forEach(col => {
+            const cb = document.getElementById(`col-cb-${col.id}`);
+            if(cb) col.visible = cb.checked;
+        });
+        document.getElementById('column-config-modal').style.display = 'none';
+        renderHistorical();
+    }
+
+    function closeColumnConfig(e) {
+        if (!e || e.target.id === 'column-config-modal') document.getElementById('column-config-modal').style.display = 'none';
+    }
+
+    function copyHistoricalToClipboard() {
+        const thead = document.getElementById('historical-thead');
+        const tbody = document.getElementById('historical-list');
+        
+        // Build tab-delimited string
+        let text = [];
+        
+        // Headers
+        let headers = [];
+        thead.querySelectorAll('th').forEach(th => {
+            if(th.innerText !== 'Action') headers.push(th.innerText.replace('arrow_drop_down','').replace('arrow_drop_up','').trim());
+        });
+        text.push(headers.join('\t'));
+
+        // Rows
+        tbody.querySelectorAll('tr').forEach(tr => {
+            let row = [];
+            tr.querySelectorAll('td').forEach((td, i) => {
+                if (i < tr.children.length - 1) row.push(td.innerText.trim());
+            });
+            text.push(row.join('\t'));
+        });
+
+        const finalText = text.join('\n');
+        navigator.clipboard.writeText(finalText).then(() => {
+            alert('Table copied to clipboard!');
+        });
+    }
+
+    async function fetchMag7() {
+        const body = document.getElementById('mag7-body');
+        const data = [
+            {t:'AAPL', n:'Apple', p:220.5, d:1.2, w:3.5, y:15},
+            {t:'MSFT', n:'Microsoft', p:410.2, d:-0.5, w:1.2, y:10},
+            {t:'NVDA', n:'Nvidia', p:125.0, d:2.5, w:8.5, y:150},
+            {t:'TSLA', n:'Tesla', p:178.0, d:-2.3, w:-5.0, y:-25},
+            {t:'AMZN', n:'Amazon', p:185.0, d:1.5, w:4.2, y:20},
+            {t:'GOOGL', n:'Alphabet', p:176.0, d:0.9, w:2.8, y:18},
+            {t:'META', n:'Meta', p:500.0, d:-1.2, w:-0.5, y:40}
+        ];
+        body.innerHTML = data.map(d => `
+            <tr><td class="font-bold">${d.t}</td><td>${d.n}</td><td>$${d.p}</td>
+            <td class="${d.d>=0?'text-green-600':'text-red-600'}">${d.d}%</td>
+            <td class="${d.w>=0?'text-green-600':'text-red-600'}">${d.w}%</td>
+            <td class="${d.y>=0?'text-green-600':'text-red-600'}">${d.y}%</td></tr>
+        `).join('');
+    }
+
+</script>
+</body>
+</html>
