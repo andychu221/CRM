@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Credit Application V31 Enhanced</title>
+    <title>Credit Request Management</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Quill Libraries -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <!-- Chart.js for Market Tab -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
     <!-- File Parsing Libraries for Real Preview -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
@@ -32,7 +36,7 @@
             --tab-inactive-bg: #f8fafc;
             --tab-inactive-text: #64748b;
             
-            --primary-color: #eab308;
+            --primary-color: #eab308; /* Yellow-500 */
             --accent-blue: #3b82f6;
             
             --status-green: #10b981;
@@ -42,6 +46,10 @@
 
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+            /* Market Colors */
+            --positive-color: #28a745;
+            --negative-color: #dc3545;
         }
 
         body {
@@ -530,23 +538,24 @@
         .paper-value input:focus, .paper-value select:focus { background: #eff6ff; border-color: #bfdbfe; }
         .paper-value.highlight { background: #fffbeb; }
         
-        /* Quill Wrapper and Expand Button */
+        /* Quill Wrapper and Expand Button (Smaller Icon) */
         .editor-wrapper { position: relative; }
         .editor-expand-btn {
             position: absolute;
             top: 6px; right: 6px;
-            width: 24px; height: 24px;
-            display: none; /* hidden by default, shown via JS if editable */
+            width: 20px; height: 20px; /* Smaller button */
+            display: none; 
             align-items: center; justify-content: center;
-            background: white;
-            border: 1px solid #d1d5db;
+            background: transparent; 
+            border: none; 
             border-radius: 4px;
             cursor: pointer;
             z-index: 10;
-            color: #666;
+            color: #9ca3af;
             transition: all 0.2s;
         }
-        .editor-expand-btn:hover { background: #f3f4f6; color: #111; }
+        .editor-expand-btn .material-icons { font-size: 16px; } /* Smaller Icon */
+        .editor-expand-btn:hover { background: rgba(0,0,0,0.05); color: #111; }
         .resizable-editor .editor-expand-btn { top: 4px; right: 4px; }
 
         .paper-editor { min-height: 100px; padding: 10px; font-family: inherit; }
@@ -567,7 +576,7 @@
         .mcap-val { font-weight: 600; font-size: 12px;}
 
         /* Internal Tabs */
-        .internal-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .internal-tabs { display: flex; gap: 4px; }
         .internal-tab {
             padding: 8px 20px; border-radius: 8px 8px 0 0; cursor: pointer;
             color: #6b7280; font-weight: 500; border: 1px solid transparent;
@@ -658,11 +667,115 @@
         .sheet-tab:hover { background: #f9fafb; }
         .sheet-tab.active { background: white; color: #166534; font-weight: bold; border-bottom: 2px solid white; position: relative; top: 1px;}
 
-        /* Excel Sheet Style (Point 2) */
+        /* Excel Sheet Style */
         .excel-table { border-collapse: collapse; font-family: monospace; font-size: 13px; margin: 0; }
         .excel-table td, .excel-table th { border: 1px solid #d1d5db; padding: 4px 8px; min-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .excel-header { background: #f3f4f6; color: #4b5563; font-weight: bold; text-align: center; user-select: none; }
         .excel-row-num { background: #f3f4f6; color: #4b5563; font-weight: bold; text-align: center; width: 40px; min-width: 40px; user-select: none; }
+        
+        /* Market Tab Styles */
+        .mkt-pane { display: none; }
+        .mkt-pane.active { display: block; animation: fadeIn 0.3s; }
+        
+        .summary-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; background: white; margin-bottom: 20px; }
+        .summary-card table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .summary-card th, .summary-card td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-size: 0.9rem; }
+        .summary-card th:first-child, .summary-card td:first-child { text-align: left; }
+        .summary-card th { background: #f9fafb; font-weight: 600; color: #6b7280; cursor: pointer; user-select: none; }
+        .summary-card tr:hover td { background: #f9fafb; }
+        .text-positive { color: var(--positive-color); font-weight: 500; }
+        .text-negative { color: var(--negative-color); font-weight: 500; }
+        
+        .mkt-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f3f4f6; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb;}
+        .mkt-input { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem; }
+        .chart-period-btn { padding: 5px 12px; border: 1px solid #d1d5db; background: white; border-radius: 4px; cursor: pointer; font-size: 0.9rem; color: #374151; }
+        .chart-period-btn:hover { background: #f3f4f6; color: var(--primary-color); }
+        .chart-period-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        
+        /* Financials Tab Styles */
+        /* Active Mode - Yellow Background White Text */
+        .active-mode-yellow { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        
+        /* Financials Resizer */
+        .fin-th-wrapper { position: relative; display: flex; align-items: center; justify-content: space-between; height: 100%; }
+        .resizer {
+            position: absolute; top: 0; right: 0; width: 6px; cursor: col-resize; height: 100%; z-index: 10;
+            background: transparent; border-right: 2px solid transparent;
+        }
+        .resizer:hover { border-right-color: #3b82f6; }
+
+        /* Depth classes logic - approx 4 chars per step */
+        .depth-0 { font-weight: 700; color: #1e3a8a; background-color: #f3f4f6; } /* Blue Bold, Light Gray BG */
+        .depth-1 { font-weight: 700; color: #111; padding-left: 32px !important; }
+		.depth-2 { color: #111; padding-left: 64px !important; }
+		.depth-3 { color: #6b7280; padding-left: 96px !important; }
+		.depth-4 { color: #6b7280; padding-left: 128px !important; }
+        
+        /* Financial Label Column (Fixed/Resizable via JS, min/max managed inline) */
+        .fin-label-col {
+    		/* min-width: 250px;  <-- 刪除這行 */
+    		white-space: nowrap;
+    		overflow: hidden;
+    		text-overflow: ellipsis;
+    		position: relative;
+    		max-width: 1px; /* 技巧：給一個極小的 max-width，強迫瀏覽器在固定佈局下執行截斷 */
+		}
+
+        /* Multi Select Dropdown Style for Financials */
+        .multi-select-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-btn {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex; align-items: center; justify-content: space-between;
+            min-width: 120px;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 160px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 1px solid #d1d5db;
+            z-index: 100;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 2px;
+        }
+        .dropdown-content.show { display: block; }
+        .dropdown-item-check {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+        .dropdown-item-check:hover { background-color: #f3f4f6; }
+        .dropdown-item-check.selected {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+        
+        /* News Layout */
+        #news-container { display: flex; height: 75vh; width: 100%; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; }
+        #news-left-pane { flex: 0 0 50%; min-width: 350px; background: white; border-right: 1px solid #d1d5db; display: flex; flex-direction: column; }
+        #news-resizer { width: 5px; cursor: col-resize; background: #f3f4f6; transition: background 0.2s; }
+        #news-resizer:hover { background: var(--primary-color); }
+        #news-right-pane { flex: 1; padding: 20px; background: #f9fafb; overflow-y: auto; }
+        
+        .news-item { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s; }
+        .news-item:hover { background: #f3f4f6; }
+        .news-item.active { background: #eff6ff; border-left: 4px solid var(--accent-blue); }
+        .news-meta { display: flex; gap: 8px; font-size: 0.75rem; color: #6b7280; margin-bottom: 4px; align-items: center; }
+        .news-tag { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
+        .news-title { font-weight: 600; font-size: 0.9rem; line-height: 1.4; color: #374151; }
         
         /* Utils */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -688,38 +801,41 @@
         .btn-back { color: var(--accent-blue); font-weight: 600; }
         .btn-back:hover { background: #eff6ff; }
 
-        /* Print Styles - Center Header */
+        /* Print Styles */
         @media print {
             @page { size: auto; margin: 10mm; }
             body, .app-container { height: auto !important; display: block !important; padding: 0 !important; margin: 0 !important; overflow: visible !important; }
-            
-            /* Hide UI Elements */
             .top-nav, .sidebar-resizer, .detail-sidebar, .detail-toolbar, .internal-tabs, #btn-save-draft, .drop-zone, .card-delete-btn, .file-delete-btn, .editor-expand-btn { display: none !important; }
-            
             #main-content { border: none; box-shadow: none; border-radius: 0; }
             .detail-layout { display: block; overflow: visible; height: auto; }
             .detail-main { overflow: visible; height: auto; }
             .detail-content { padding: 0; overflow: visible; background: white; }
-            
-            /* Print only the active pane */
             .internal-pane { display: none !important; }
             .internal-pane.active { display: block !important; }
-            
             body { background: white; font-size: 9pt; zoom: 0.8; }
             .paper-form { box-shadow: none; border: none; padding: 0; margin: 0; max-width: 100%; width: 100%; }
-            
-            /* Centered Title */
             .paper-form-title { text-align: center !important; margin-bottom: 20px; font-size: 1.5rem; width: 100%; display: block;}
-            
-            /* Compact Paper Fields for Print */
             .paper-section { page-break-inside: avoid; margin-bottom: 15px; border-radius: 0; }
             .paper-section-header { padding: 4px 8px; font-size: 0.85rem; }
             .paper-field-row { border-bottom-color: #eee; }
             .paper-label { width: 120px; padding: 4px 8px; font-size: 0.8rem; }
             .paper-value { padding: 4px 8px; font-size: 0.8rem; }
             .paper-editor { min-height: auto; padding: 5px; }
-            
             input, select { border: none !important; appearance: none; padding: 0; background: transparent !important; }
+            
+            /* Special Print for Financials Tab */
+            body:has(#view-financials.active) .view-section { padding: 0; }
+            body:has(#view-financials.active) #fin-table-container { 
+                border: none; box-shadow: none; overflow: visible; 
+                transform: scale(0.65); transform-origin: top left; width: 150%; 
+            }
+            body:has(#view-financials.active) .top-nav, 
+            body:has(#view-financials.active) #fin-ticker-select, 
+            body:has(#view-financials.active) #fin-period-selector,
+            body:has(#view-financials.active) .multi-select-dropdown,
+            body:has(#view-financials.active) .btn,
+            body:has(#view-financials.active) #btn-fin-ann,
+            body:has(#view-financials.active) #btn-fin-qtr { display: none !important; }
         }
 
     </style>
@@ -730,7 +846,7 @@
     <header class="top-nav">
         <div class="brand">
             <div class="brand-icon"><span class="material-icons">assignment</span></div>
-            <span>Credit Application V31</span>
+            <span>Credit Request Management</span>
         </div>
         
         <div class="nav-tabs" id="main-nav">
@@ -774,7 +890,6 @@
                         <div class="font-bold text-lg" id="detail-header-title">Request #001</div>
                         
                         <div class="flex gap-2 items-center">
-                             <!-- Saved automatically, button removed per Requirement 4 -->
                              <button class="btn btn-ghost" id="btn-save-draft" onclick="saveDraft()" style="display:none;"><span class="material-icons">save</span> Save</button>
                             <button class="btn btn-ghost" onclick="window.print()"><span class="material-icons">print</span> Print</button>
                         </div>
@@ -901,7 +1016,6 @@
                             <div class="paper-form">
                                 <div class="paper-form-title">Customer Credit Review</div>
                                 
-                                <!-- Requirement 2: Editable Header inputs for Reviewer -->
                                 <div class="paper-header-row">
                                     <div class="flex items-center">
                                         <strong>Customer:</strong> 
@@ -909,7 +1023,8 @@
                                     </div>
                                     <div class="flex items-center">
                                         <strong>Date:</strong> 
-                                        <input type="date" id="rev-header-date" readonly class="ml-2">
+                                        <!-- Point 3: Auto Calc Trigger -->
+                                        <input type="date" id="rev-header-date" readonly class="ml-2" onchange="calculateReviewMarketCap()">
                                     </div>
                                 </div>
                                 <div class="paper-header-row">
@@ -994,18 +1109,17 @@
 
                                 <div class="paper-section">
                                     <div class="paper-section-header">Market Data</div>
-                                    <div class="paper-grid-2">
+                                    <div class="paper-grid-2" style="grid-template-columns: 0.9fr 1.1fr;">
                                         <div class="paper-col">
                                             <div class="paper-field-row">
-                                                <div class="paper-label">Business Domain</div>
+                                                <div class="paper-label" style="width: 130px;">Business Domain</div>
                                                 <div class="paper-value"><input type="text" id="rev-domain"></div>
                                             </div>
                                             <div class="paper-field-row">
-                                                <div class="paper-label">Listed/Private</div>
+                                                <div class="paper-label" style="width: 130px;">Listed/Private</div>
                                                 <div class="paper-value"><input type="text" id="rev-listed-display"></div>
                                             </div>
                                         </div>
-                                        <!-- Requirement 5: Market Cap Layout Adjustment -->
                                         <div class="paper-col">
                                             <div class="paper-field-row" style="height: 100%;">
                                                 <div class="paper-label" style="height: auto; width: 100px;">Market Cap<br><span style="font-size:0.75rem; font-weight:normal;">(12M)</span></div>
@@ -1013,15 +1127,15 @@
                                                     <div class="mcap-container">
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">Current</span>
-                                                            <input type="text" id="mcap-curr" class="text-center font-bold text-xs bg-transparent w-full" value="$2.8T">
+                                                            <input type="text" id="mcap-curr" class="text-center font-bold text-xs bg-transparent w-full" value="">
                                                         </div>
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">High</span>
-                                                            <input type="text" id="mcap-high" class="text-center font-bold text-xs bg-transparent w-full" value="$3.0T">
+                                                            <input type="text" id="mcap-high" class="text-center font-bold text-xs bg-transparent w-full" value="">
                                                         </div>
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">Low</span>
-                                                            <input type="text" id="mcap-low" class="text-center font-bold text-xs bg-transparent w-full" value="$2.2T">
+                                                            <input type="text" id="mcap-low" class="text-center font-bold text-xs bg-transparent w-full" value="">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1058,7 +1172,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Reviewer Attachments - Requirement 2: Rename Header -->
                                 <div class="paper-section mt-4 hidden" id="reviewer-upload-section">
                                     <div class="paper-section-header">Attachments</div>
                                     <div class="p-4">
@@ -1135,7 +1248,6 @@
                                 <label class="text-xs font-bold text-gray-500">Comments</label>
                             </div>
                             <div id="wrapper-action-comment" class="resizable-editor editor-wrapper">
-                                <!-- Requirement 3: Expand Icon for Comment -->
                                 <div class="editor-expand-btn" onclick="openExpandedEditor('wrapper-action-comment')"><span class="material-icons">open_in_full</span></div>
                                 <div id="editor-action-comment"></div>
                             </div>
@@ -1167,7 +1279,19 @@
             <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-200 overflow-x-auto">
                 <table class="data-table">
                     <thead>
-                        <tr><th>Ticker</th><th>Name</th><th>Family</th><th>Region</th><th>Sector</th><th>Domain</th><th>Account Manager</th><th>Credit Line</th><th>A/R Bal</th><th>Util %</th><th>Last Review</th></tr>
+                        <tr>
+                            <th onclick="sortCustomerMaster('id')">Ticker <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('name')">Name <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('family')">Family <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('region')">Region <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('sector')">Sector <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('domain')">Domain <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('am')">Account Manager <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('creditLine')">Credit Line <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('ar')">A/R Bal <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('util')">Util % <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                            <th onclick="sortCustomerMaster('lastRev')">Last Review <span class="material-icons text-sm align-middle">unfold_more</span></th>
+                        </tr>
                     </thead>
                     <tbody id="master-table-body"></tbody>
                 </table>
@@ -1176,8 +1300,6 @@
 
         <div id="view-historical" class="view-section">
             <h2 class="text-xl font-bold mb-4">Application History</h2>
-            
-            <!-- Requirement 6: History Filters & Tools -->
             <div class="flex flex-wrap gap-4 mb-4 bg-white p-3 rounded shadow-sm border border-gray-200 items-end">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">Ticker</label>
@@ -1215,33 +1337,179 @@
         </div>
 
         <div id="view-financials" class="view-section">
-            <div class="bg-white p-6 rounded shadow-sm text-center">
-                <h2 class="text-xl font-bold mb-4">Financial Analysis</h2>
-                <input type="text" class="f-input p-2 border rounded" placeholder="Enter Ticker" style="max-width:300px; display:inline-block;">
-                <button class="btn btn-primary">Search</button>
+            <div class="flex flex-col h-full">
+                <!-- Top Control Bar (Modified) -->
+                <div class="flex justify-between items-center mb-4 bg-gray-50 p-3 rounded border border-gray-200">
+                    <div class="flex gap-4 items-center">
+                        <select id="fin-ticker-select" class="p-2 border rounded font-semibold text-gray-700 bg-white" onchange="fin_loadData()">
+                            <!-- Populated JS -->
+                        </select>
+                        
+                        <!-- New Multi-select Dropdown -->
+                        <div class="multi-select-dropdown" id="fin-period-selector">
+                            <button class="dropdown-btn" onclick="fin_togglePeriodDropdown()">
+                                <span id="fin-period-label">Select Periods</span>
+                                <span class="material-icons text-sm">arrow_drop_down</span>
+                            </button>
+                            <div class="dropdown-content" id="fin-period-dropdown-content">
+                                <!-- Checkboxes populated via JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                         <button class="btn btn-ghost btn-sm" onclick="fin_openRowConfig()"><span class="material-icons text-sm">view_headline</span> Row Config</button>
+                        <div class="flex bg-white border rounded overflow-hidden shadow-sm">
+                            <button class="px-3 py-1 hover:bg-gray-100 text-sm font-bold active-mode-yellow transition-colors" id="btn-fin-ann" onclick="fin_setPeriodMode('Annual')">Annual</button>
+                            <button class="px-3 py-1 hover:bg-gray-100 text-sm font-bold transition-colors" id="btn-fin-qtr" onclick="fin_setPeriodMode('Quarterly')">Quarterly</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Internal Tabs Container (Modified Layout) -->
+                <div class="flex justify-between items-end border-b border-gray-200 mb-4">
+                    <div class="internal-tabs mb-0 border-b-0">
+                        <div class="internal-tab active" onclick="switchFinSubTab('summary', this)">Summary</div>
+                        <div class="internal-tab" onclick="switchFinSubTab('income_statement', this)">Income Statement</div>
+                        <div class="internal-tab" onclick="switchFinSubTab('balance_sheet', this)">Balance Sheet</div>
+                        <div class="internal-tab" onclick="switchFinSubTab('cash_flow', this)">Cash Flow</div>
+                    </div>
+                     <div class="flex items-center gap-2 pb-2">
+                         <button class="btn btn-ghost btn-sm text-gray-500 hover:text-black" onclick="fin_copyTable()"><span class="material-icons text-sm">content_copy</span></button>
+                         <button class="btn btn-ghost btn-sm text-gray-500 hover:text-black" onclick="fin_printTable()"><span class="material-icons text-sm">print</span></button>
+                         <span class="text-sm font-bold text-gray-500 ml-2">Unit: US$ M</span>
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div id="fin-table-container" class="overflow-auto border border-gray-200 rounded bg-white shadow-sm flex-1 relative">
+                    <!-- Table generated here -->
+                </div>
             </div>
         </div>
 
         <div id="view-market" class="view-section">
-             <div class="bg-white rounded-xl shadow-sm p-6 max-w-4xl mx-auto">
-                <h2 class="text-xl font-bold mb-6">Magnificent 7 Performance</h2>
-                <table class="data-table">
-                    <thead><tr><th>Ticker</th><th>Name</th><th>Price</th><th>1D %</th><th>1W %</th><th>YTD %</th></tr></thead>
-                    <tbody id="mag7-body"></tbody>
-                </table>
+            <div class="internal-tabs">
+                <div class="internal-tab active" onclick="switchMarketSubTab('summary', this)">Summary</div>
+                <div class="internal-tab" onclick="switchMarketSubTab('chart', this)">Chart</div>
+                <div class="internal-tab" onclick="switchMarketSubTab('news', this)">News</div>
+            </div>
+            
+            <div id="mkt-pane-summary" class="mkt-pane active">
+                <div class="mkt-controls">
+                    <span class="font-bold text-sm">As of Date:</span>
+                    <input type="date" id="mkt-summary-date" class="mkt-input" onchange="mkt_updateDate()">
+                </div>
+                
+                <div class="summary-card" id="mkt-mag7-container">
+                    <table>
+                        <thead id="mkt-mag7-thead">
+                            <!-- Populated by JS -->
+                        </thead>
+                        <tbody id="mkt-mag7-body">
+                             <tr><td colspan="11" class="text-center p-4">Loading market data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="mkt-pane-chart" class="mkt-pane">
+                 <div class="mkt-controls" id="chart-controls-area">
+                     <span class="font-bold text-sm">Custom Period:</span>
+                     <input type="date" id="mkt-chart-start" class="mkt-input" onchange="mkt_renderChart()">
+                     <span class="text-sm">to</span>
+                     <input type="date" id="mkt-chart-end" class="mkt-input" onchange="mkt_renderChart()">
+                     <button class="chart-period-btn" data-period="1W" onclick="mkt_setChartPeriod('1W')">1W</button>
+                     <button class="chart-period-btn" data-period="1M" onclick="mkt_setChartPeriod('1M')">1M</button>
+                     <button class="chart-period-btn" data-period="3M" onclick="mkt_setChartPeriod('3M')">3M</button>
+                     <button class="chart-period-btn" data-period="YTD" onclick="mkt_setChartPeriod('YTD')">YTD</button>
+                     <button class="chart-period-btn" data-period="1Y" onclick="mkt_setChartPeriod('1Y')">1Y</button>
+                     <button class="chart-period-btn" data-period="2Y" onclick="mkt_setChartPeriod('2Y')">2Y</button>
+                     <button class="chart-period-btn" data-period="5Y" onclick="mkt_setChartPeriod('5Y')">5Y</button>
+                 </div>
+                 <div style="height: 500px; width: 100%; border:1px solid #e5e7eb; padding:10px; border-radius:8px; background:white;">
+                     <canvas id="mkt-canvas-custom"></canvas>
+                 </div>
+            </div>
+            
+            <div id="mkt-pane-news" class="mkt-pane">
+                <div id="news-container">
+                    <div id="news-left-pane">
+                        <div style="padding: 10px; border-bottom: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 10px; background: #f3f4f6; align-items: center;">
+                            <select id="mkt-news-filter-company" class="mkt-input" onchange="mkt_filterNews()" style="min-width: 150px;">
+                                <!-- Populated JS -->
+                            </select>
+                            <select id="mkt-news-filter-source" class="mkt-input" onchange="mkt_filterNews()" style="min-width: 120px;">
+                                <option value="all">Source (All)</option>
+                            </select>
+                            <select id="mkt-news-filter-date" class="mkt-input" onchange="mkt_filterNews()">
+                                <option value="all">All Dates</option>
+                                <option value="7d">Last 7 Days</option>
+                                <option value="30d">Last 30 Days</option>
+                            </select>
+                        </div>
+                        <div id="mkt-news-list" style="overflow-y:auto; flex:1;">
+                            <p class="p-4 text-gray-500">Loading news...</p>
+                        </div>
+                    </div>
+                    <div id="news-resizer"></div>
+                    <div id="news-right-pane">
+                        <div style="text-align:center; color:#999; margin-top:50px;">
+                            Select a news item to read.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
     </main>
 </div>
 
-<!-- Expanded Editor Modal (Requirement 3) -->
+<!-- Expanded Editor Modal -->
 <div class="expanded-editor-modal" id="expanded-editor-modal">
     <div class="expanded-toolbar">
          <button class="btn btn-ghost" onclick="closeExpandedEditor()"><span class="material-icons">close</span> Close</button>
     </div>
     <div class="expanded-editor-container">
         <div id="expanded-quill-container"></div>
+    </div>
+</div>
+
+<!-- Ticker Modal -->
+<div class="modal-overlay" id="ticker-modal" onclick="mkt_closeTickerModal(event)">
+    <div class="modal-box" style="width: 800px; max-width: 90%;" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-xl" id="ticker-modal-title">Ticker Chart</h3>
+            <button class="btn btn-ghost btn-sm" onclick="mkt_closeTickerModal(null)"><span class="material-icons">close</span></button>
+        </div>
+        <div class="flex gap-2 mb-4" id="modal-chart-controls">
+            <button class="chart-period-btn" data-period="1M" onclick="mkt_updateModalChart('1M')">1M</button>
+            <button class="chart-period-btn" data-period="3M" onclick="mkt_updateModalChart('3M')">3M</button>
+            <button class="chart-period-btn" data-period="6M" onclick="mkt_updateModalChart('6M')">6M</button>
+            <button class="chart-period-btn" data-period="YTD" onclick="mkt_updateModalChart('YTD')">YTD</button>
+            <button class="chart-period-btn" data-period="1Y" onclick="mkt_updateModalChart('1Y')">1Y</button>
+        </div>
+        <div style="height: 400px; width: 100%;">
+            <canvas id="ticker-modal-canvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Period Modal -->
+<div class="modal-overlay" id="custom-period-modal" onclick="mkt_closeCustomPeriodModal(event)">
+    <div class="modal-box" style="width: 300px;" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg mb-4">Select Custom Period</h3>
+        <div class="mb-4">
+            <label class="block text-sm font-bold mb-1">Start Date</label>
+            <input type="date" id="mkt-summary-custom-start" class="border rounded p-2 w-full">
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-bold mb-1">End Date</label>
+            <input type="date" id="mkt-summary-custom-end" class="border rounded p-2 w-full">
+        </div>
+        <div class="flex justify-end">
+            <button class="btn btn-primary" onclick="mkt_applyCustomPeriod()">Apply</button>
+        </div>
     </div>
 </div>
 
@@ -1280,9 +1548,6 @@
                 <tr><td class="p-2 border">> $100M</td><td class="p-2 border">+ CEO</td></tr>
             </tbody>
         </table>
-        <div class="text-xs text-gray-500 mb-4 bg-yellow-50 p-2 rounded border border-yellow-200">
-            <span class="font-bold">Note:</span> These rules are enforced. You may add extra approvers, but removing mandatory roles is restricted.
-        </div>
         <div class="flex justify-end">
             <button class="btn btn-ghost" onclick="closeSettingsModal(null)">Close</button>
         </div>
@@ -1296,6 +1561,18 @@
         <div id="col-config-list" class="flex flex-col gap-2 mb-4"></div>
         <div class="flex justify-end">
             <button class="btn btn-primary btn-sm" onclick="applyColumnConfig()">Apply</button>
+        </div>
+    </div>
+</div>
+
+<!-- Row Config Modal for Financials -->
+<div class="modal-overlay" id="fin-row-config-modal" onclick="fin_closeRowConfig(event)">
+    <div class="modal-box" style="width: 400px;" onclick="event.stopPropagation()">
+        <h3 class="font-bold text-lg mb-4">Row Configuration</h3>
+        <div id="fin-row-config-list" class="flex flex-col gap-2 mb-4 max-h-[400px] overflow-y-auto"></div>
+        <div class="flex justify-end gap-2">
+             <button class="btn btn-ghost btn-sm" onclick="fin_closeRowConfig(null)">Cancel</button>
+             <button class="btn btn-primary btn-sm" onclick="fin_applyRowConfig()">Apply</button>
         </div>
     </div>
 </div>
@@ -1341,14 +1618,25 @@
 
     const WORKFLOW_ROLES = ['Maker', 'Reviewer', 'Approver', 'Manager', 'CFO', 'CEO'];
     
+    // Updated CUSTOMER_DB with shares for approx calculation
     const CUSTOMER_DB = {
-        'AAPL': { name: 'Apple Inc.', family: 'Apple Grp', region: 'NAM', sector: 'Consumer', domain: 'Technology', am: 'John Sales', creditLine: 50000000, ar: 1200000, util: 2.4, lastRev: '2024-05-01', nextRev: '2025-05-01', id: 'CUST-001', rating: 'AAA', est: '1976', payTerm: 'Net 60', intRating: 'IG1', listed: true },
-        'NVDA': { name: 'Nvidia Corp.', family: 'Nvidia Grp', region: 'NAM', sector: 'Enterprise', domain: 'Semiconductors', am: 'Sarah Chip', creditLine: 20000000, ar: 15000000, util: 75.0, lastRev: '2024-06-15', nextRev: '2025-06-15', id: 'CUST-002', rating: 'AA+', est: '1993', payTerm: 'Net 45', intRating: 'IG2', listed: true },
-        'TSLA': { name: 'Tesla Inc.', family: 'Tesla Grp', region: 'NAM', sector: 'Auto', domain: 'Automotive', am: 'Mike Car', creditLine: 15000000, ar: 8000000, util: 53.3, lastRev: '2024-04-10', nextRev: '2025-04-10', id: 'CUST-003', rating: 'BBB', est: '2003', payTerm: 'Net 30', intRating: 'IG4', listed: true },
-        'MSFT': { name: 'Microsoft Corp.', family: 'MSFT Grp', region: 'NAM', sector: 'Enterprise', domain: 'Technology', am: 'Bill Gates', creditLine: 80000000, ar: 500000, util: 0.6, lastRev: '2024-02-20', nextRev: '2025-02-20', id: 'CUST-004', rating: 'AAA', est: '1975', payTerm: 'Net 60', intRating: 'IG1', listed: true },
-        'AMZN': { name: 'Amazon.com Inc.', family: 'Amazon Grp', region: 'NAM', sector: 'Consumer', domain: 'E-commerce', am: 'Jeff B', creditLine: 60000000, ar: 30000000, util: 50.0, lastRev: '2024-03-01', nextRev: '2025-03-01', id: 'CUST-005', rating: 'AA', est: '1994', payTerm: 'Net 45', intRating: 'IG2', listed: true },
-        'GOOGL': { name: 'Alphabet Inc.', family: 'Google Grp', region: 'NAM', sector: 'Internet', domain: 'Technology', am: 'Larry P', creditLine: 55000000, ar: 1000000, util: 1.8, lastRev: '2024-05-15', nextRev: '2025-05-15', id: 'CUST-006', rating: 'AA+', est: '1998', payTerm: 'Net 60', intRating: 'IG2', listed: true },
-        'META': { name: 'Meta Platforms', family: 'Meta Grp', region: 'NAM', sector: 'Internet', domain: 'Social Media', am: 'Mark Z', creditLine: 30000000, ar: 29000000, util: 96.6, lastRev: '2024-01-10', nextRev: '2025-01-10', id: 'CUST-007', rating: 'A+', est: '2004', payTerm: 'Net 30', intRating: 'IG3', listed: true }
+        'AAPL': { name: 'Apple Inc.', family: 'Apple Grp', region: 'NAM', sector: 'Consumer', domain: 'Technology', am: 'John Sales', creditLine: 50000000, ar: 1200000, util: 2.4, lastRev: '2024-05-01', nextRev: '2025-05-01', id: 'CUST-001', rating: 'AAA', est: '1976', payTerm: 'Net 60', intRating: 'IG1', listed: true, shares: 15.3e9 },
+        'NVDA': { name: 'Nvidia Corp.', family: 'Nvidia Grp', region: 'NAM', sector: 'Enterprise', domain: 'Semiconductors', am: 'Sarah Chip', creditLine: 20000000, ar: 15000000, util: 75.0, lastRev: '2024-06-15', nextRev: '2025-06-15', id: 'CUST-002', rating: 'AA+', est: '1993', payTerm: 'Net 45', intRating: 'IG2', listed: true, shares: 2.46e9 },
+        'TSLA': { name: 'Tesla Inc.', family: 'Tesla Grp', region: 'NAM', sector: 'Auto', domain: 'Automotive', am: 'Mike Car', creditLine: 15000000, ar: 8000000, util: 53.3, lastRev: '2024-04-10', nextRev: '2025-04-10', id: 'CUST-003', rating: 'BBB', est: '2003', payTerm: 'Net 30', intRating: 'IG4', listed: true, shares: 3.19e9 },
+        'MSFT': { name: 'Microsoft Corp.', family: 'MSFT Grp', region: 'NAM', sector: 'Enterprise', domain: 'Technology', am: 'Bill Gates', creditLine: 80000000, ar: 500000, util: 0.6, lastRev: '2024-02-20', nextRev: '2025-02-20', id: 'CUST-004', rating: 'AAA', est: '1975', payTerm: 'Net 60', intRating: 'IG1', listed: true, shares: 7.43e9 },
+        'AMZN': { name: 'Amazon.com Inc.', family: 'Amazon Grp', region: 'NAM', sector: 'Consumer', domain: 'E-commerce', am: 'Jeff B', creditLine: 60000000, ar: 30000000, util: 50.0, lastRev: '2024-03-01', nextRev: '2025-03-01', id: 'CUST-005', rating: 'AA', est: '1994', payTerm: 'Net 45', intRating: 'IG2', listed: true, shares: 10.4e9 },
+        'GOOGL': { name: 'Alphabet Inc.', family: 'Google Grp', region: 'NAM', sector: 'Internet', domain: 'Technology', am: 'Larry P', creditLine: 55000000, ar: 1000000, util: 1.8, lastRev: '2024-05-15', nextRev: '2025-05-15', id: 'CUST-006', rating: 'AA+', est: '1998', payTerm: 'Net 60', intRating: 'IG2', listed: true, shares: 12.3e9 },
+        'META': { name: 'Meta Platforms', family: 'Meta Grp', region: 'NAM', sector: 'Internet', domain: 'Social Media', am: 'Mark Z', creditLine: 30000000, ar: 29000000, util: 96.6, lastRev: '2024-01-10', nextRev: '2025-01-10', id: 'CUST-007', rating: 'A+', est: '2004', payTerm: 'Net 30', intRating: 'IG3', listed: true, shares: 2.54e9 }
+    };
+
+    const TICKER_DOMAINS = {
+        'AAPL': 'apple.com',
+        'NVDA': 'nvidia.com',
+        'TSLA': 'tesla.com',
+        'MSFT': 'microsoft.com',
+        'AMZN': 'amazon.com',
+        'GOOGL': 'google.com',
+        'META': 'meta.com'
     };
 
     let requests = [
@@ -1367,6 +1655,7 @@
                 { role: 'CEO', user: 'Sundar Pichai', status: 'Approved', date: '2025-01-17 10:00' }
             ]
         },
+        // ... (Other cases same as before)
         {
             id: 'REQ-2025-003', ticker: 'NVDA', name: 'Nvidia Corp.', status: 'Pending', stepIndex: 2,
             currLimit: 20000000, propLimit: 40000000, purpose: 'New Credit Line', date: '2025-05-10',
@@ -1396,42 +1685,9 @@
                 { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
                 { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
             ]
-        },
-        {
-            id: 'REQ-2025-008', ticker: '', name: '', status: 'Draft', stepIndex: 0,
-            currLimit: 0, propLimit: 0, purpose: 'New Credit Line', date: '',
-            forecast: '', bizDesc: '', risks: '', mitigants: '', recommendation: '', files: [],
-            history: [{ role: 'Maker', user: 'Tim Cook', status: 'Pending', date: null }] 
-        },
-        {
-            id: 'REQ-2025-009', ticker: 'AMZN', name: 'Amazon.com Inc.', status: 'Pending', stepIndex: 1, 
-            currLimit: 50000000, propLimit: 55000000, purpose: 'Credit Line Change', date: '2025-06-01',
-            forecast: 'Prime day prep.', bizDesc: 'Retail.', risks: '', mitigants: '', recommendation: '', files: [],
-            history: [
-                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-06-01 09:00' },
-                { role: 'Reviewer', user: 'Jensen Huang', status: 'Pending', date: null },
-                { role: 'Approver', user: 'Elon Musk', status: 'Pending', date: null },
-                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
-                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
-                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
-            ]
-        },
-        {
-            id: 'REQ-2025-010', ticker: 'MSFT', name: 'Microsoft Corp.', status: 'Pending', stepIndex: 3, 
-            currLimit: 120000000, propLimit: 150000000, purpose: 'New Credit Line', date: '2025-06-05',
-            forecast: 'Azure expansion.', bizDesc: 'Cloud.', risks: 'None', mitigants: 'Cash rich', recommendation: 'Approve', files: [],
-            history: [
-                { role: 'Maker', user: 'Tim Cook', status: 'Approved', date: '2025-06-05 09:00' },
-                { role: 'Reviewer', user: 'Jensen Huang', status: 'Approved', date: '2025-06-05 14:00' },
-                { role: 'Approver', user: 'Elon Musk', status: 'Approved', date: '2025-06-06 10:00' },
-                { role: 'Manager', user: 'Satya Nadella', status: 'Pending', date: null },
-                { role: 'CFO', user: 'Andy Jassy', status: 'Pending', date: null },
-                { role: 'CEO', user: 'Sundar Pichai', status: 'Pending', date: null }
-            ]
         }
     ];
 
-    // History Column Configuration
     let historyConfig = {
         columns: [
             { id: 'id', label: 'Req ID', visible: true },
@@ -1451,17 +1707,71 @@
     let expandedQuill = null;
     let expandedSourceQuill = null;
 
+    // --- Market Tab Data & Vars ---
+    const mkt_tickers = ['NVDA', 'GOOGL', 'AAPL', 'MSFT', 'AMZN', 'META', 'TSLA'];
+    const mkt_names = {'NVDA':'Nvidia', 'GOOGL':'Alphabet', 'AAPL':'Apple', 'MSFT':'Microsoft', 'AMZN':'Amazon', 'META':'Meta', 'TSLA':'Tesla'};
+    const mkt_colors = {'NVDA':'#76b900', 'GOOGL':'#4285F4', 'AAPL':'#A2AAAD', 'MSFT':'#00A4EF', 'AMZN':'#FF9900', 'META':'#0668E1', 'TSLA':'#E31937'};
+    let mkt_dataByTicker = {};
+    let mkt_perfData = new Map();
+    let mkt_fullNews = [];
+    let mkt_newsSources = new Set();
+    let mkt_activeChart = null;
+    let mkt_activeModalChart = null; 
+    let mkt_refDate = new Date(); 
+    let mkt_sortState = { col: null, dir: 'asc' };
+    let currentModalTicker = null;
+    let mkt_customStart = new Date(new Date().getFullYear(), 0, 1);
+    let mkt_customEnd = new Date();
+    let mkt_meta = {}; 
+
+    // --- Financials Tab Data & Vars ---
+    let fin_data = null;
+    let fin_currentTicker = 'AAPL';
+    let fin_viewType = 'Quarterly';
+    let fin_activeSubTab = 'summary';
+    let fin_selectedPeriods = []; 
+    let fin_rowConfig = []; // Stores user prefs for row visibility/order
+
+    // Customer Master Sorting
+    let custSort = { col: 'id', dir: 'asc' };
+
+    // Helper: Parse Metric (B/M/K)
+    function parseMetric(val) {
+        if (!val) return null;
+        if (typeof val === 'number') return val;
+        let mult = 1;
+        if (val.endsWith('B')) mult = 1e9;
+        if (val.endsWith('M')) mult = 1e6;
+        if (val.endsWith('K')) mult = 1e3;
+        return parseFloat(val.replace(/[BMK,]/g, '')) * mult;
+    }
+
+    // Helper: Number Formatting (No Decimals for Financials)
+    function formatNumber(num, decimals = 1) {
+        if (num === null || num === undefined || isNaN(num)) return '-';
+        return num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         initQuill();
         initResizer();
+        initNewsResizer();
         renderUserMenu();
         updateNavTabs();
         renderDashboardGreeting();
         renderNotebooks();
         renderCustomerMaster();
-        fetchMag7();
         renderHistorical();
         setInterval(renderDashboardGreeting, 60000); 
+        
+        // Market Tab Init
+        document.getElementById('mkt-summary-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('mkt-summary-custom-start').value = mkt_customStart.toISOString().split('T')[0]; 
+        document.getElementById('mkt-summary-custom-end').value = mkt_customEnd.toISOString().split('T')[0];
+        mkt_loadData();
+
+        // Financials Tab Init
+        fin_init();
     });
 
     function initQuill() {
@@ -1501,7 +1811,6 @@
         quillSummary = new Quill('#editor-summary', fullToolbarOps);
         quillPurpose = new Quill('#editor-purpose', simpleToolbarOps);
 
-        // Expanded Quill Instance
         expandedQuill = new Quill('#expanded-quill-container', fullToolbarOps);
         expandedQuill.on('text-change', () => {
              if(expandedSourceQuill) {
@@ -1627,6 +1936,14 @@
 
         if(tabId === 'dashboard') renderNotebooks();
         if(tabId === 'historical') renderHistorical();
+        if(tabId === 'market') {
+             // Ensure data is loaded
+             if(Object.keys(mkt_dataByTicker).length === 0) mkt_loadData();
+             else {
+                 mkt_renderSummary();
+                 if(!mkt_activeChart) mkt_setChartPeriod('YTD');
+             }
+        }
     }
     
     function handleBackNav() {
@@ -1680,7 +1997,6 @@
     }
 
     // --- Dashboard ---
-    // Requirement 1: Sort by latest action time, new items first
     function renderNotebooks() {
         const container = document.getElementById('notebook-container');
         container.innerHTML = '';
@@ -1705,7 +2021,6 @@
             return currentStepRole === currentUser.role;
         });
 
-        // Sorting Logic: Latest Updated First
         visibleRequests.sort((a, b) => {
             const getDate = (req) => {
                 const dates = req.history.filter(h => h.date).map(h => new Date(h.date).getTime());
@@ -1819,7 +2134,6 @@
             document.getElementById('frm-payterm-other').value = reqTerm;
         }
 
-        // Requirement 2: Populate Header Inputs
         document.getElementById('rev-header-name').value = req.name;
         document.getElementById('rev-header-date').value = req.date || '';
         document.getElementById('rev-header-parent').value = (req.parentCompany || (cust ? cust.name : '')); 
@@ -1856,7 +2170,6 @@
         document.getElementById('req-prepared-by').value = req.reqPreparedBy || 'Tim Cook';
         document.getElementById('rev-prepared-by').value = req.revPreparedBy || 'Jensen Huang';
 
-        // --- Permission Logic ---
         const isMaker = currentUser.role === 'Maker';
         const isReviewer = currentUser.role === 'Reviewer';
         const isAtMyStep = req.history[req.stepIndex] && req.history[req.stepIndex].role === currentUser.role && req.status !== 'Approved';
@@ -1882,11 +2195,8 @@
         const canEditReviewForm = isReviewer && isAtMyStep && !isCompleted;
 
         toggleInputs('pane-req-form', canEditReqForm);
-        
-        // Requirement 2: Toggle inputs including new header fields for Reviewer
         toggleInputs('pane-review-form', canEditReviewForm);
         
-        // Ensure header inputs are toggled for Reviewer
         const revHeaderInputs = [
             'rev-header-name', 'rev-header-date', 'rev-header-parent', 'rev-header-shared'
         ];
@@ -1907,11 +2217,8 @@
         
         setQuill(quillSummary, 'wrapper-summary', canEditReviewForm);
         
-        // Requirement 3: Comment box expand logic
-        setQuill(quillActionComment, 'wrapper-action-comment', (canEditReqForm || canEditReviewForm || isAtMyStep)); // If I can act, I can comment
+        setQuill(quillActionComment, 'wrapper-action-comment', (canEditReqForm || canEditReviewForm || isAtMyStep)); 
 
-        // Requirement 4: Save button removed (handled via CSS/HTML removal), keeping logic for auto-save
-        
         document.getElementById('req-prepared-by').readOnly = !canEditReqForm;
         document.getElementById('rev-prepared-by').readOnly = !canEditReviewForm;
 
@@ -1937,6 +2244,8 @@
         if (canEditReqForm) {
             autoAdjustWorkflow(req);
         }
+        
+        calculateReviewMarketCap();
 
         renderWorkflowSidebar(req);
         switchInternalTab('req-form', document.querySelector('.internal-tab'));
@@ -1948,14 +2257,13 @@
         inputs.forEach(inp => {
             if(inp.parentElement.classList.contains('mcap-cell')) return; 
             if(inp.id.includes('prepared-by')) return;
-            if(inp.id.includes('rev-header-')) return; // Handled separately
+            if(inp.id.includes('rev-header-')) return; 
 
             inp.readOnly = !enable;
             if(inp.tagName === 'SELECT') inp.disabled = !enable;
         });
     }
 
-    // Requirement 3: Quill Expand Logic
     function openExpandedEditor(wrapperId) {
         let sourceQuill;
         if(wrapperId === 'wrapper-forecast') sourceQuill = quillForecast;
@@ -2516,7 +2824,7 @@
             cancelReturnMode();
         }
 
-        commitSave(true); // Save all fields including Reviewer fields
+        commitSave(true); 
 
         quillActionComment.root.innerHTML = '';
         renderWorkflowSidebar(req);
@@ -2549,7 +2857,6 @@
         renderNotebooks();
     }
     
-    // Save logic updated to include Requirement 2 fields
     function commitSave(silent) {
         const req = requests.find(r => r.id === currentReqId);
         if(req) {
@@ -2575,7 +2882,6 @@
                  
                  autoAdjustWorkflow(req);
              } else if (currentUser.role === 'Reviewer') {
-                 // Reviewer fields save
                  req.risks = quillRisks.root.innerHTML;
                  req.mitigants = quillMitigants.root.innerHTML;
                  req.recommendation = quillRecommendation.root.innerHTML;
@@ -2583,8 +2889,7 @@
                  req.summary = quillSummary.root.innerHTML; 
                  req.revPreparedBy = document.getElementById('rev-prepared-by').value;
                  
-                 // New Header Inputs Save
-                 req.name = document.getElementById('rev-header-name').value; // Sync name back
+                 req.name = document.getElementById('rev-header-name').value; 
                  req.date = document.getElementById('rev-header-date').value;
                  req.parentCompany = document.getElementById('rev-header-parent').value;
                  req.sharedTickers = document.getElementById('rev-header-shared').value;
@@ -2613,11 +2918,45 @@
         document.getElementById(`pane-${paneId}`).classList.add('active');
     }
 
+    function sortCustomerMaster(colId) {
+        if(custSort.col === colId) custSort.dir = custSort.dir === 'asc' ? 'desc' : 'asc';
+        else { custSort.col = colId; custSort.dir = 'asc'; }
+        
+        renderCustomerMaster();
+    }
+
     function renderCustomerMaster() {
         const tbody = document.getElementById('master-table-body');
-        tbody.innerHTML = Object.values(CUSTOMER_DB).map(c => `
+        const list = Object.entries(CUSTOMER_DB).map(([ticker, c]) => ({...c, ticker}));
+        
+        // Apply Sort
+        list.sort((a,b) => {
+            let valA = a[custSort.col] || a['ticker']; // fallback for id vs ticker naming
+            let valB = b[custSort.col] || b['ticker'];
+            
+            if (custSort.col === 'id') { valA = a.ticker; valB = b.ticker; }
+            else if (custSort.col === 'creditLine' || custSort.col === 'ar' || custSort.col === 'util') {
+                valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0;
+            } else {
+                valA = (valA || '').toString().toLowerCase();
+                valB = (valB || '').toString().toLowerCase();
+            }
+            
+            if(valA > valB) return custSort.dir === 'asc' ? 1 : -1;
+            if(valA < valB) return custSort.dir === 'asc' ? -1 : 1;
+            return 0;
+        });
+
+        const iconHtml = custSort.dir === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down';
+        
+        // Update headers to reset icons then set correct one
+        document.querySelectorAll('.data-table th span').forEach(sp => sp.innerText = 'unfold_more');
+        const targetTh = document.querySelector(`.data-table th[onclick="sortCustomerMaster('${custSort.col}')"] span`);
+        if(targetTh) targetTh.innerText = iconHtml;
+
+        tbody.innerHTML = list.map(c => `
             <tr>
-                <td class="font-bold">${c.id}</td><td>${c.name}</td><td>${c.family}</td><td>${c.region}</td>
+                <td class="font-bold">${c.ticker}</td><td>${c.name}</td><td>${c.family}</td><td>${c.region}</td>
                 <td>${c.sector}</td><td>${c.domain}</td><td>${c.am}</td>
                 <td>$${(c.creditLine/1000000).toFixed(1)}M</td><td>$${(c.ar/1000000).toFixed(1)}M</td>
                 <td>${c.util}%</td><td>${c.lastRev}</td>
@@ -2625,17 +2964,13 @@
         `).join('');
     }
 
-    // Requirement 6: History Table with Filters, Sort, Column Config
     function renderHistorical() {
         const thead = document.getElementById('historical-thead');
         const tbody = document.getElementById('historical-list');
-        
-        // Filters
         const fTicker = document.getElementById('hist-filter-ticker').value.toLowerCase();
         const fPurpose = document.getElementById('hist-filter-purpose').value;
         const fStatus = document.getElementById('hist-filter-status').value;
 
-        // Prepare Data
         let data = requests.map(r => {
              const lastStep = r.history.filter(h => h.status !== 'Pending').pop() || r.history[r.history.length-1];
              return {
@@ -2651,7 +2986,6 @@
              };
         });
 
-        // Apply Filter
         data = data.filter(d => {
             if(fTicker && !d.ticker.toLowerCase().includes(fTicker)) return false;
             if(fPurpose && d.purpose !== fPurpose) return false;
@@ -2659,7 +2993,6 @@
             return true;
         });
 
-        // Apply Sort
         const sortCol = historyConfig.sort.column;
         const sortDir = historyConfig.sort.dir;
         
@@ -2674,7 +3007,6 @@
             return 0;
         });
 
-        // Render Header
         let headerHtml = '<tr>';
         historyConfig.columns.forEach(col => {
             if(!col.visible) return;
@@ -2684,7 +3016,6 @@
         headerHtml += '<th>Action</th></tr>';
         thead.innerHTML = headerHtml;
 
-        // Render Body
         if(data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="${historyConfig.columns.filter(c=>c.visible).length + 1}" class="p-4 text-center text-gray-500">No records found.</td></tr>`;
         } else {
@@ -2708,7 +3039,7 @@
             historyConfig.sort.dir = historyConfig.sort.dir === 'asc' ? 'desc' : 'asc';
         } else {
             historyConfig.sort.column = columnId;
-            historyConfig.sort.dir = 'desc'; // Default new sort to desc
+            historyConfig.sort.dir = 'desc'; 
         }
         renderHistorical();
     }
@@ -2733,7 +3064,7 @@
         const temp = historyConfig.columns[idx];
         historyConfig.columns[idx] = historyConfig.columns[target];
         historyConfig.columns[target] = temp;
-        openColumnConfig(); // Re-render list
+        openColumnConfig(); 
     }
 
     function applyColumnConfig() {
@@ -2752,18 +3083,12 @@
     function copyHistoricalToClipboard() {
         const thead = document.getElementById('historical-thead');
         const tbody = document.getElementById('historical-list');
-        
-        // Build tab-delimited string
         let text = [];
-        
-        // Headers
         let headers = [];
         thead.querySelectorAll('th').forEach(th => {
             if(th.innerText !== 'Action') headers.push(th.innerText.replace('arrow_drop_down','').replace('arrow_drop_up','').trim());
         });
         text.push(headers.join('\t'));
-
-        // Rows
         tbody.querySelectorAll('tr').forEach(tr => {
             let row = [];
             tr.querySelectorAll('td').forEach((td, i) => {
@@ -2771,30 +3096,1043 @@
             });
             text.push(row.join('\t'));
         });
-
         const finalText = text.join('\n');
         navigator.clipboard.writeText(finalText).then(() => {
             alert('Table copied to clipboard!');
         });
     }
 
-    async function fetchMag7() {
-        const body = document.getElementById('mag7-body');
-        const data = [
-            {t:'AAPL', n:'Apple', p:220.5, d:1.2, w:3.5, y:15},
-            {t:'MSFT', n:'Microsoft', p:410.2, d:-0.5, w:1.2, y:10},
-            {t:'NVDA', n:'Nvidia', p:125.0, d:2.5, w:8.5, y:150},
-            {t:'TSLA', n:'Tesla', p:178.0, d:-2.3, w:-5.0, y:-25},
-            {t:'AMZN', n:'Amazon', p:185.0, d:1.5, w:4.2, y:20},
-            {t:'GOOGL', n:'Alphabet', p:176.0, d:0.9, w:2.8, y:18},
-            {t:'META', n:'Meta', p:500.0, d:-1.2, w:-0.5, y:40}
+    // --- Market Tab Logic ---
+    function getLogoHtml(ticker) {
+        const domain = TICKER_DOMAINS[ticker];
+        if (!domain) return '';
+        return `<img src="https://getlogo.dev/logos/${domain}?token=pub_97e0e4df192f20dd2626307d2148f88d" style="width:20px; height:20px; vertical-align:middle; margin-right:8px; border-radius:50%; object-fit:contain; background:white;" onerror="this.style.display='none'">`;
+    }
+
+    function switchMarketSubTab(paneId, tabEl) {
+        document.querySelectorAll('#view-market .internal-tab').forEach(t => t.classList.remove('active'));
+        if(tabEl) tabEl.classList.add('active');
+        document.querySelectorAll('.mkt-pane').forEach(p => p.classList.remove('active'));
+        document.getElementById(`mkt-pane-${paneId}`).classList.add('active');
+        
+        if(paneId === 'chart') {
+            setTimeout(() => {
+                 mkt_renderChart();
+            }, 50);
+        } else if (paneId === 'news') {
+             if(mkt_fullNews.length === 0) mkt_loadNews();
+        }
+    }
+
+    async function mkt_loadData() {
+         try {
+             const res = await fetch('https://raw.githubusercontent.com/andychu221/yhfinance-fred-data/main/market_data/US_Stocks.json');
+             if(!res.ok) throw new Error("Data fetch failed");
+             const json = await res.json();
+             
+             mkt_tickers.forEach(ticker => {
+                 const rawTicker = ticker === 'TSLA' ? 'TSLA' : (ticker.includes('.') ? ticker : `${ticker}.O`);
+                 const rawData = json[rawTicker] || json[ticker]; 
+                 
+                 if(rawData && rawData.date && rawData.close) {
+                     // Store Meta
+                     mkt_meta[ticker] = { shares: parseMetric(rawData.sharesOutstanding) };
+
+                     const clean = [];
+                     rawData.date.forEach((dStr, i) => {
+                         if(!dStr.includes('T') && rawData.close[i] != null) {
+                             clean.push({ date: new Date(dStr), price: rawData.close[i] });
+                         }
+                     });
+                     mkt_dataByTicker[ticker] = clean;
+                     
+                     // Calc Perf with "Find Price On Or Before" logic
+                     const findPrice = (d) => {
+                         const target = d.getTime();
+                         for(let i=clean.length-1; i>=0; i--) {
+                             if(clean[i].date.getTime() <= target) return clean[i].price;
+                         }
+                         return null;
+                     };
+                     const calc = (p1, p2) => ((p2/p1)-1)*100;
+                     mkt_perfData.set(ticker, { findPrice, calc, data: clean });
+                 }
+             });
+             
+             mkt_renderSummary();
+         } catch(e) {
+             console.error("Market Data Error", e);
+             document.getElementById('mkt-mag7-body').innerHTML = `<tr><td colspan="11" class="text-center text-red-500">Error loading market data.</td></tr>`;
+         }
+    }
+    
+    function mkt_updateDate() {
+        const val = document.getElementById('mkt-summary-date').value;
+        if(val) mkt_refDate = new Date(val);
+        mkt_renderSummary();
+    }
+
+    function mkt_renderSummary() {
+        const tbody = document.getElementById('mkt-mag7-body');
+        const customStart = mkt_customStart; 
+        const customEnd = mkt_customEnd;
+
+        // Header Generation
+        const thead = document.getElementById('mkt-mag7-thead');
+        const cols = [
+            {id:'Name', label:'Name'}, {id:'Ticker', label:'Ticker'}, {id:'Date', label:'Date'},
+            {id:'MarketCap', label:'Market Cap'}, {id:'Price', label:'Price'},
+            {id:'1-Day', label:'1D %'}, {id:'1-Week', label:'1W %'}, {id:'1-Month', label:'1M %'},
+            {id:'YTD', label:'YTD %'}, {id:'1-Year', label:'1Y %'},
+            {id:'Custom', label:'Custom %', edit:true}
         ];
-        body.innerHTML = data.map(d => `
-            <tr><td class="font-bold">${d.t}</td><td>${d.n}</td><td>$${d.p}</td>
-            <td class="${d.d>=0?'text-green-600':'text-red-600'}">${d.d}%</td>
-            <td class="${d.w>=0?'text-green-600':'text-red-600'}">${d.w}%</td>
-            <td class="${d.y>=0?'text-green-600':'text-red-600'}">${d.y}%</td></tr>
+
+        let headerHtml = '<tr>';
+        cols.forEach(c => {
+            let sortIcon = '';
+            if(mkt_sortState.col === c.id) {
+                sortIcon = mkt_sortState.dir === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down';
+            }
+            const iconHtml = sortIcon ? `<span class="material-icons text-sm align-middle">${sortIcon}</span>` : '';
+
+            if(c.edit) {
+                 headerHtml += `<th><span class="cursor-pointer" onclick="mkt_sortSummary('${c.id}')">${c.label} ${iconHtml}</span> <span onclick="mkt_openCustomPeriodModal()" class="material-icons text-xs cursor-pointer ml-1">edit</span></th>`;
+            } else {
+                 headerHtml += `<th onclick="mkt_sortSummary('${c.id}')">${c.label} ${iconHtml}</th>`;
+            }
+        });
+        headerHtml += '</tr>';
+        thead.innerHTML = headerHtml;
+
+        let rows = mkt_tickers.map(t => {
+            const perf = mkt_perfData.get(t);
+            if(!perf) return null;
+            
+            // Point 1: Closest Trading Day Logic
+            let currPoint = perf.data.find(p => p.date.getTime() === mkt_refDate.getTime());
+            
+            // If explicit date not found, search backwards
+            if (!currPoint) {
+                // Find last data point <= refDate
+                for(let i=perf.data.length-1; i>=0; i--) {
+                    if(perf.data[i].date <= mkt_refDate) {
+                        currPoint = perf.data[i];
+                        break;
+                    }
+                }
+            }
+            
+            const currPrice = currPoint ? currPoint.price : 0;
+            const effectiveDate = currPoint ? currPoint.date : mkt_refDate;
+            
+            // Point 2: Market Cap Logic (Shares * Price / 1e9 => B)
+            // MODIFICATION: Add toLocaleString for thousands separator
+            let mcap = '-';
+            const shares = mkt_meta[t] ? mkt_meta[t].shares : 0;
+            if(shares && currPrice) {
+                const val = currPrice * shares;
+                mcap = (val / 1e9).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B';
+            }
+
+            // Calculate Returns based on Effective Date
+            const getRet = (period) => {
+                if(!currPrice) return -999;
+                
+                let d = new Date(effectiveDate);
+                
+                if(period==='1-Day') {
+                    // Logic: Find index of current, use index-1
+                    const idx = perf.data.findIndex(p => p.date.getTime() === effectiveDate.getTime());
+                    if (idx > 0) {
+                        return perf.calc(perf.data[idx-1].price, currPrice);
+                    }
+                    return -999;
+                }
+                
+                if(period==='1-Week') d.setDate(d.getDate()-7);
+                else if(period==='1-Month') d.setMonth(d.getMonth()-1);
+                else if(period==='YTD') d = new Date(d.getFullYear(),0,1);
+                else if(period==='1-Year') d.setFullYear(d.getFullYear()-1);
+                
+                const p0 = perf.findPrice(d);
+                if(!p0) return -999;
+                return perf.calc(p0, currPrice);
+            };
+            
+            const pStart = perf.findPrice(customStart);
+            const pEnd = perf.findPrice(customEnd);
+            const customRet = (pStart && pEnd) ? perf.calc(pStart, pEnd) : -999;
+            
+            const dateStr = `${effectiveDate.getDate()}/${effectiveDate.toLocaleString('en-US', {month:'short'})}`;
+
+            return {
+                Name: mkt_names[t],
+                Ticker: t,
+                Date: dateStr,
+                MarketCap: mcap,
+                Price: currPrice || 0,
+                '1-Day': getRet('1-Day'),
+                '1-Week': getRet('1-Week'),
+                '1-Month': getRet('1-Month'),
+                'YTD': getRet('YTD'),
+                '1-Year': getRet('1-Year'),
+                'Custom': customRet
+            };
+        }).filter(Boolean);
+        
+        if(mkt_sortState.col) {
+            rows.sort((a,b) => {
+                let va = a[mkt_sortState.col], vb = b[mkt_sortState.col];
+                
+                const parseMCap = (s) => {
+                    if(s === '-') return -1;
+                    return parseFloat(s.replace(/,/g, ''));
+                };
+
+                if (mkt_sortState.col === 'MarketCap') {
+                    va = parseMCap(va); vb = parseMCap(vb);
+                }
+
+                if(va === -999) return 1; if(vb === -999) return -1;
+                if(va > vb) return mkt_sortState.dir === 'asc' ? 1 : -1;
+                if(va < vb) return mkt_sortState.dir === 'asc' ? -1 : 1;
+                return 0;
+            });
+        }
+        
+        tbody.innerHTML = rows.map(r => `
+            <tr onclick="mkt_openTickerModal('${r.Ticker}')" class="cursor-pointer hover:bg-blue-50">
+                <td class="font-bold text-gray-700 flex items-center">${getLogoHtml(r.Ticker)} ${r.Name}</td>
+                <td><span style="background:${mkt_colors[r.Ticker]}; color:white; padding:2px 6px; border-radius:4px; font-size:0.75rem;">${r.Ticker}</span></td>
+                <td>${r.Date}</td>
+                <td>${r.MarketCap}</td>
+                <td>${formatNumber(r.Price)}</td>
+                <td class="${r['1-Day']>=0?'text-positive':'text-negative'}">${r['1-Day']!==-999?formatNumber(r['1-Day'])+'%':'-'}</td>
+                <td class="${r['1-Week']>=0?'text-positive':'text-negative'}">${r['1-Week']!==-999?formatNumber(r['1-Week'])+'%':'-'}</td>
+                <td class="${r['1-Month']>=0?'text-positive':'text-negative'}">${r['1-Month']!==-999?formatNumber(r['1-Month'])+'%':'-'}</td>
+                <td class="${r['YTD']>=0?'text-positive':'text-negative'}">${r['YTD']!==-999?formatNumber(r['YTD'])+'%':'-'}</td>
+                <td class="${r['1-Year']>=0?'text-positive':'text-negative'}">${r['1-Year']!==-999?formatNumber(r['1-Year'])+'%':'-'}</td>
+                <td class="${r['Custom']>=0?'text-positive':'text-negative'} border-l border-gray-200">${r['Custom']!==-999?formatNumber(r['Custom'])+'%':'-'}</td>
+            </tr>
         `).join('');
+    }
+    
+    function mkt_sortSummary(col) {
+        if(mkt_sortState.col === col) mkt_sortState.dir = mkt_sortState.dir === 'asc' ? 'desc' : 'asc';
+        else { mkt_sortState.col = col; mkt_sortState.dir = 'desc'; }
+        mkt_renderSummary();
+    }
+    
+    function mkt_copySummaryTable() {
+         const rows = Array.from(document.querySelectorAll('#mkt-mag7-body tr'));
+         let text = "Name\tTicker\tDate\tMCap\tPrice\t1D\t1W\t1M\tYTD\t1Y\tCustom\n";
+         rows.forEach(r => {
+             text += Array.from(r.querySelectorAll('td')).map(td => td.innerText).join('\t') + '\n';
+         });
+         navigator.clipboard.writeText(text).then(() => alert("Copied!"));
+    }
+
+    // --- Custom Period Modal Logic ---
+    function mkt_openCustomPeriodModal() {
+        document.getElementById('mkt-summary-custom-start').value = mkt_customStart.toISOString().split('T')[0];
+        document.getElementById('mkt-summary-custom-end').value = mkt_customEnd.toISOString().split('T')[0];
+        document.getElementById('custom-period-modal').style.display = 'flex';
+    }
+
+    function mkt_closeCustomPeriodModal(e) {
+        if(!e || e.target.id === 'custom-period-modal') {
+            document.getElementById('custom-period-modal').style.display = 'none';
+        }
+    }
+
+    function mkt_applyCustomPeriod() {
+        const sVal = document.getElementById('mkt-summary-custom-start').value;
+        const eVal = document.getElementById('mkt-summary-custom-end').value;
+        if(sVal && eVal) {
+            mkt_customStart = new Date(sVal);
+            mkt_customEnd = new Date(eVal);
+            mkt_renderSummary();
+            document.getElementById('custom-period-modal').style.display = 'none';
+        }
+    }
+
+    // --- Ticker Modal Logic ---
+    function mkt_openTickerModal(ticker) {
+        currentModalTicker = ticker;
+        document.getElementById('ticker-modal-title').innerText = ticker + " Chart";
+        document.getElementById('ticker-modal').style.display = 'flex';
+        mkt_updateModalChart('1Y');
+    }
+
+    function mkt_closeTickerModal(e) {
+        if(!e || e.target.id === 'ticker-modal' || e.target.closest('.btn-ghost')) {
+            document.getElementById('ticker-modal').style.display = 'none';
+        }
+    }
+
+    function mkt_updateModalChart(period) {
+        // Point 7: Update Button State
+        document.querySelectorAll('#modal-chart-controls .chart-period-btn').forEach(btn => {
+            if(btn.dataset.period === period) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        const ctx = document.getElementById('ticker-modal-canvas').getContext('2d');
+        if(mkt_activeModalChart) mkt_activeModalChart.destroy();
+        
+        const data = mkt_dataByTicker[currentModalTicker];
+        if(!data) return;
+        
+        const end = new Date();
+        let start;
+        if(period === '1M') start = new Date(new Date().setMonth(end.getMonth()-1));
+        else if(period === '3M') start = new Date(new Date().setMonth(end.getMonth()-3));
+        else if(period === '6M') start = new Date(new Date().setMonth(end.getMonth()-6));
+        else if(period === 'YTD') start = new Date(end.getFullYear(), 0, 1);
+        else if(period === '1Y') start = new Date(new Date().setFullYear(end.getFullYear()-1));
+        
+        const filtered = data.filter(p => p.date >= start && p.date <= end);
+        
+        mkt_activeModalChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Price',
+                    data: filtered.map(p => ({x: p.date, y: p.price})),
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: { unit: 'month' } }
+                }
+            }
+        });
+    }
+
+    // --- Market Chart ---
+    function mkt_setChartPeriod(period) {
+        // Point 7: Active State
+        document.querySelectorAll('#chart-controls-area .chart-period-btn').forEach(btn => {
+            if(btn.dataset.period === period) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+
+        const today = new Date();
+        const end = today;
+        let start;
+        if(period === '1W') start = new Date(new Date().setDate(today.getDate()-7));
+        else if(period === '1M') start = new Date(new Date().setMonth(today.getMonth()-1));
+        else if(period === '3M') start = new Date(new Date().setMonth(today.getMonth()-3));
+        else if(period === 'YTD') start = new Date(today.getFullYear(), 0, 1);
+        else if(period === '1Y') start = new Date(new Date().setFullYear(today.getFullYear()-1));
+        else if(period === '2Y') start = new Date(new Date().setFullYear(today.getFullYear()-2));
+        else if(period === '5Y') start = new Date(new Date().setFullYear(today.getFullYear()-5));
+        
+        document.getElementById('mkt-chart-start').value = start.toISOString().split('T')[0];
+        document.getElementById('mkt-chart-end').value = end.toISOString().split('T')[0];
+        mkt_renderChart();
+    }
+    
+    function mkt_renderChart() {
+        const startVal = document.getElementById('mkt-chart-start').value;
+        const endVal = document.getElementById('mkt-chart-end').value;
+        if(!startVal || !endVal) return;
+        
+        const start = new Date(startVal);
+        const end = new Date(endVal);
+        
+        const ctx = document.getElementById('mkt-canvas-custom').getContext('2d');
+        if(mkt_activeChart) mkt_activeChart.destroy();
+        
+        const datasets = mkt_tickers.map(t => {
+            const perf = mkt_perfData.get(t);
+            if(!perf) return null;
+            const pts = perf.data.filter(p => p.date >= start && p.date <= end);
+            if(pts.length === 0) return null;
+            const base = pts[0].price;
+            return {
+                label: t,
+                data: pts.map(p => ({ x: p.date, y: ((p.price/base)-1)*100 })),
+                borderColor: mkt_colors[t],
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+            };
+        }).filter(Boolean);
+        
+        mkt_activeChart = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: { unit: 'month' }, grid: { color: '#f3f4f6' } },
+                    y: { title: { display: true, text: '%' }, grid: { color: '#f3f4f6' } }
+                },
+                plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } }
+            }
+        });
+    }
+
+    // --- Market News (Filter Mag7) ---
+    async function mkt_loadNews() {
+        const listEl = document.getElementById('mkt-news-list');
+        listEl.innerHTML = '<p class="p-4 text-gray-500">Loading...</p>';
+        const newsTickers = ['NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA']; 
+        let all = [];
+        mkt_newsSources = new Set();
+        
+        const fetches = newsTickers.map(t => {
+            return fetch(`https://raw.githubusercontent.com/andychu221/reuters-news-archive/main/taiwan-stock-news/${t}.json`)
+                .then(r => r.ok ? r.json() : null)
+                .then(json => {
+                    if(json && json.news) {
+                        json.news.forEach(n => {
+                            n.ticker = t;
+                            n.jsDate = new Date(n.Date + ' ' + (n.Time||''));
+                            if(n.Source) mkt_newsSources.add(n.Source);
+                        });
+                        all = all.concat(json.news);
+                    }
+                });
+        });
+        
+        await Promise.all(fetches);
+        all.sort((a,b) => b.jsDate - a.jsDate);
+        mkt_fullNews = all;
+        
+        const cSelect = document.getElementById('mkt-news-filter-company');
+        cSelect.innerHTML = '<option value="all">Company (All)</option>';
+        newsTickers.sort().forEach(t => cSelect.innerHTML += `<option value="${t}">${t}</option>`);
+        
+        const sSelect = document.getElementById('mkt-news-filter-source');
+        sSelect.innerHTML = '<option value="all">Source (All)</option>';
+        Array.from(mkt_newsSources).sort().forEach(s => sSelect.innerHTML += `<option value="${s}">${s}</option>`);
+        
+        mkt_filterNews();
+    }
+    
+    function mkt_filterNews() {
+        const cVal = document.getElementById('mkt-news-filter-company').value;
+        const sVal = document.getElementById('mkt-news-filter-source').value;
+        const dVal = document.getElementById('mkt-news-filter-date').value;
+        
+        let filtered = mkt_fullNews.filter(n => {
+            if(cVal !== 'all' && n.ticker !== cVal) return false;
+            if(sVal !== 'all' && n.Source !== sVal) return false;
+            if(dVal !== 'all') {
+                const now = new Date();
+                const diff = (now - n.jsDate) / (1000 * 60 * 60 * 24);
+                if(dVal === '7d' && diff > 7) return false;
+                if(dVal === '30d' && diff > 30) return false;
+            }
+            return true;
+        });
+        
+        const listEl = document.getElementById('mkt-news-list');
+        if(filtered.length === 0) listEl.innerHTML = '<p class="p-4">No news found.</p>';
+        else {
+            listEl.innerHTML = filtered.slice(0, 100).map((n, i) => `
+                <div class="news-item" onclick="mkt_showNewsContent(mkt_fullNews.find(x => x.id === '${n.id}'))"> 
+                    <div class="news-meta">
+                         <span class="news-tag">${n.ticker}</span>
+                         <span>${n.Date}</span>
+                         <span class="ml-auto">${n.Source || ''}</span>
+                    </div>
+                    <div class="news-title">${n.Title}</div>
+                </div>
+            `).join('');
+            
+             const items = listEl.querySelectorAll('.news-item');
+             items.forEach((div, idx) => {
+                 div.onclick = () => {
+                      document.querySelectorAll('.news-item').forEach(x => x.classList.remove('active'));
+                      div.classList.add('active');
+                      mkt_showNewsContent(filtered[idx]);
+                 };
+             });
+        }
+    }
+    
+    function mkt_showNewsContent(item) {
+        const pane = document.getElementById('news-right-pane');
+        pane.scrollTop = 0;
+        pane.innerHTML = `
+            <h2 class="font-bold text-xl mb-2">${item.Title}</h2>
+            <div class="text-sm text-gray-500 border-b border-gray-200 pb-2 mb-4">
+                ${item.ticker} | ${item.Source || 'Unknown'} | ${item.Date} ${item.Time||''}
+            </div>
+            <div class="text-base leading-relaxed whitespace-pre-wrap">${item.Content || 'No content.'}</div>
+            <div class="mt-4"><a href="${item.URL}" target="_blank" class="text-blue-600 hover:underline text-sm font-bold">Read Original <span class="material-icons text-xs align-middle">open_in_new</span></a></div>
+        `;
+    }
+    
+    function initNewsResizer() {
+        const resizer = document.getElementById('news-resizer'); 
+        const leftPane = document.getElementById('news-left-pane'); 
+        let isResizing = false;
+        if(!resizer) return;
+        
+        resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
+        document.addEventListener('mousemove', (e) => { 
+            if (!isResizing) return; 
+            const container = document.getElementById('news-container');
+            if(!container) return;
+            const containerOffset = container.getBoundingClientRect().left; 
+            const newWidth = e.clientX - containerOffset; 
+            if (newWidth > 200 && newWidth < document.body.clientWidth - 200) { leftPane.style.flex = `0 0 ${newWidth}px`; } 
+        });
+        document.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = 'default'; document.body.style.userSelect = ''; });
+    }
+
+    // --- Review Form Auto Calculation ---
+    function calculateReviewMarketCap() {
+        const dateStr = document.getElementById('rev-header-date').value;
+        const req = requests.find(r => r.id === currentReqId);
+        if(!req || !dateStr) return;
+        const ticker = req.ticker;
+        
+        const cust = CUSTOMER_DB[ticker];
+        const shares = cust ? cust.shares : 0;
+        
+        let histData = mkt_dataByTicker[ticker];
+        if(!histData) return; 
+        
+        const targetDate = new Date(dateStr);
+        const targetTime = targetDate.getTime();
+        let priceOnDate = 0;
+        
+        const sorted = histData.sort((a,b) => a.date - b.date);
+        for(let i=sorted.length-1; i>=0; i--) {
+            if(sorted[i].date.getTime() <= targetTime) {
+                priceOnDate = sorted[i].price;
+                break;
+            }
+        }
+        
+        if(!priceOnDate) return;
+        
+        // Point 2: Market Cap in B (and thousand separator)
+        let mcapValue = (priceOnDate * shares / 1e9);
+        let mcapFormatted = mcapValue.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B'; 
+        
+        document.getElementById('mcap-curr').value = '$' + mcapFormatted;
+        
+        const lookbackDate = new Date(targetDate);
+        lookbackDate.setDate(lookbackDate.getDate() - 250);
+        
+        const rangeData = sorted.filter(p => p.date >= lookbackDate && p.date <= targetDate);
+        if(rangeData.length > 0) {
+            const prices = rangeData.map(p => p.price);
+            const maxP = Math.max(...prices);
+            const minP = Math.min(...prices);
+            
+            let highMcap = (maxP * shares / 1e9).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B';
+            let lowMcap = (minP * shares / 1e9).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B';
+            
+            document.getElementById('mcap-high').value = '$' + highMcap;
+            document.getElementById('mcap-low').value = '$' + lowMcap;
+        }
+    }
+
+    // --- Financials Tab Logic ---
+    function fin_init() {
+        const select = document.getElementById('fin-ticker-select');
+        select.innerHTML = mkt_tickers.map(t => `<option value="${t}">${t}</option>`).join('');
+        select.value = fin_currentTicker;
+        
+        // Close dropdown when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('#fin-period-selector')) {
+                document.getElementById('fin-period-dropdown-content').classList.remove('show');
+            }
+        });
+        
+        // Ensure Quarterly is active by default
+        fin_setPeriodMode('Quarterly');
+        
+        fin_loadData();
+    }
+
+    function switchFinSubTab(subTab, el) {
+        document.querySelectorAll('#view-financials .internal-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        fin_activeSubTab = subTab;
+        if(fin_data) fin_renderTable();
+    }
+
+    function fin_setPeriodMode(mode) {
+        fin_viewType = mode;
+        document.getElementById('btn-fin-ann').classList.toggle('active-mode-yellow', mode === 'Annual');
+        document.getElementById('btn-fin-qtr').classList.toggle('active-mode-yellow', mode === 'Quarterly');
+        
+        // Re-init dropdown based on new mode
+        fin_updatePeriodSelector();
+    }
+    
+    // --- New Financials Period Selector Logic ---
+    function fin_togglePeriodDropdown() {
+        document.getElementById('fin-period-dropdown-content').classList.toggle('show');
+    }
+
+    function fin_updatePeriodSelector() {
+        // Filter available periods based on mode
+        const modeFilter = fin_viewType === 'Quarterly' ? 'Q' : 'FY';
+        let availablePeriods = [];
+        
+        if (fin_data) {
+            // Extract all unique periods that match the mode
+            const allPeriods = [...new Set(fin_data.map(d => d.period))];
+            availablePeriods = allPeriods.filter(p => p.includes(modeFilter));
+            
+            // Sort periods descending
+            availablePeriods.sort((a, b) => {
+                const parseP = (p) => {
+                    const parts = p.split(' ');
+                    const year = parseInt(parts[1]);
+                    let sub = 0;
+                    if(parts[0].startsWith('Q')) sub = parseInt(parts[0].substring(1));
+                    return year * 100 + sub;
+                };
+                return parseP(b) - parseP(a);
+            });
+        }
+
+        // Default: select top 4
+        fin_selectedPeriods = availablePeriods.slice(0, 5);
+
+        // Render Dropdown Content
+        const dropdown = document.getElementById('fin-period-dropdown-content');
+        dropdown.innerHTML = availablePeriods.map(p => `
+            <div class="dropdown-item-check ${fin_selectedPeriods.includes(p) ? 'selected' : ''}" onclick="fin_togglePeriod('${p}')">
+                <span class="material-icons text-sm">${fin_selectedPeriods.includes(p) ? 'check_box' : 'check_box_outline_blank'}</span>
+                ${p}
+            </div>
+        `).join('');
+
+        // Update Label
+        document.getElementById('fin-period-label').innerText = `${fin_selectedPeriods.length} Periods Selected`;
+        
+        if(fin_data) fin_renderTable();
+    }
+
+    function fin_togglePeriod(period) {
+        if (fin_selectedPeriods.includes(period)) {
+            fin_selectedPeriods = fin_selectedPeriods.filter(p => p !== period);
+        } else {
+            fin_selectedPeriods.push(period);
+            // Re-sort selected periods to maintain chronological order
+            fin_selectedPeriods.sort((a, b) => {
+                 const parseP = (p) => {
+                    const parts = p.split(' ');
+                    const year = parseInt(parts[1]);
+                    let sub = 0;
+                    if(parts[0].startsWith('Q')) sub = parseInt(parts[0].substring(1));
+                    return year * 100 + sub;
+                };
+                return parseP(b) - parseP(a);
+            });
+        }
+        
+        // Re-render dropdown UI (to show selection state) without resetting list
+        const dropdown = document.getElementById('fin-period-dropdown-content');
+        const modeFilter = fin_viewType === 'Quarterly' ? 'Q' : 'FY';
+        const allPeriods = [...new Set(fin_data.map(d => d.period))].filter(p => p.includes(modeFilter)).sort((a,b) => {
+             const parseP = (p) => {
+                    const parts = p.split(' ');
+                    const year = parseInt(parts[1]);
+                    let sub = 0;
+                    if(parts[0].startsWith('Q')) sub = parseInt(parts[0].substring(1));
+                    return year * 100 + sub;
+                };
+                return parseP(b) - parseP(a);
+        });
+
+        dropdown.innerHTML = allPeriods.map(p => `
+            <div class="dropdown-item-check ${fin_selectedPeriods.includes(p) ? 'selected' : ''}" onclick="fin_togglePeriod('${p}')">
+                <span class="material-icons text-sm">${fin_selectedPeriods.includes(p) ? 'check_box' : 'check_box_outline_blank'}</span>
+                ${p}
+            </div>
+        `).join('');
+        
+        document.getElementById('fin-period-label').innerText = `${fin_selectedPeriods.length} Periods Selected`;
+        fin_renderTable();
+    }
+
+    async function fin_loadData() {
+        fin_currentTicker = document.getElementById('fin-ticker-select').value;
+        const container = document.getElementById('fin-table-container');
+        container.innerHTML = '<div class="p-8 text-center text-gray-500">Loading Financials...</div>';
+        
+        try {
+            const res = await fetch(`https://raw.githubusercontent.com/andychu221/yhfinance-fred-data/main/us_financials/${fin_currentTicker}.json`);
+            if(!res.ok) throw new Error("Failed to load financials");
+            const json = await res.json();
+            fin_data = json.data;
+            
+            // Init selector after data load
+            fin_updatePeriodSelector();
+            
+        } catch(e) {
+            console.error(e);
+            container.innerHTML = '<div class="p-8 text-center text-red-500">Error loading financial data.</div>';
+        }
+    }
+
+    // --- Enhanced Summary Calculation ---
+    function fin_getGrowth(data, currentPeriod, label) {
+        // Logic: Find current val, find previous period val.
+        const currVal = findValue(data, currentPeriod, label);
+        if(currVal === null) return null;
+
+        const parts = currentPeriod.split(' ');
+        const year = parseInt(parts[1]);
+        let prevPeriod = '';
+        
+        if(parts[0] === 'FY') {
+            prevPeriod = `FY ${year - 1}`;
+        } else if (parts[0].startsWith('Q')) {
+             // For QoQ/YoY
+             prevPeriod = `${parts[0]} ${year - 1}`;
+        }
+        
+        const prevVal = findValue(data, prevPeriod, label);
+        if(prevVal === null || prevVal === 0) return null;
+        
+        return ((currVal - prevVal) / Math.abs(prevVal)) * 100;
+    }
+
+    function fin_processData(subTab) {
+        const displayPeriods = fin_selectedPeriods;
+        if(displayPeriods.length === 0) return { periods: [], rows: [] };
+
+        let rows = [];
+        
+        if (subTab === 'summary') {
+            // Enhanced Summary Config with Absolute Values
+            const summaryConfig = [
+                { label: 'Key Financials (US$ M)', isHeader: true, order: -20 },
+                { label: 'Total Revenue', search: 'Total Revenue', depth: 1, order: -19 },
+                { label: 'Gross Profit', search: 'Gross Profit', depth: 1, order: -18 },
+                { label: 'Operating Income', search: 'Operating Income (Loss)', depth: 1, order: -17 },
+                { label: 'Net Profit', search: 'Net Income (Loss) Attributable to Parent', depth: 1, order: -16 },
+                { label: 'Basic EPS', search: 'Earnings Per Share, Basic', depth: 1, order: -15, isEPS: true },
+                { label: 'Cash & Equivalents', search: 'Cash and Cash Equivalents, at Carrying Value', depth: 1, order: -14 },
+                //{ label: 'Total Debt', search: 'Total Debt', depth: 1, order: -13 },
+                //{ label: 'Capital Expenditure', search: 'Capital Expenditure', depth: 1, order: -12 },
+                //{ label: 'Free Cash Flow', calc: 'fcf', depth: 1, order: -11 },
+                //{ label: 'Shares Outstanding', search: 'Basic Average Shares', depth: 1, order: -10.5 },
+
+                { label: 'Growth Metrics (YoY)', isHeader: true, order: -10 },
+                { label: 'Revenue Growth %', calc: 'growth', target: 'Total Revenue', isRatio: true, order: -9.9, depth: 1 },
+                { label: 'Net Profit Growth %', calc: 'growth', target: 'Net Income (Loss) Attributable to Parent', isRatio: true, order: -9.8, depth: 1 },
+
+                { label: 'Key Margins', isHeader: true, order: -5 },
+                { label: 'Gross Margin %', calc: 'ratio', num: 'Gross Profit', den: 'Total Revenue', isRatio: true, order: -4.9, depth: 1 },
+                { label: 'Operating Margin %', calc: 'ratio', num: 'Operating Income (Loss)', den: 'Total Revenue', isRatio: true, order: -4.8, depth: 1 },
+                { label: 'Net Margin %', calc: 'ratio', num: 'Net Income (Loss) Attributable to Parent', den: 'Total Revenue', isRatio: true, order: -4.7, depth: 1 },
+                
+                //{ label: 'Returns', isHeader: true, order: -4 },
+                //{ label: 'ROE %', calc: 'ratio', num: 'Net Income (Loss) Attributable to Parent', den: 'Equity Attributable to Parent', isRatio: true, order: -3.9, depth: 1 },
+                //{ label: 'ROA %', calc: 'ratio', num: 'Net Income (Loss) Attributable to Parent', den: 'Total Assets', isRatio: true, order: -3.8, depth: 1 }
+            ];
+            rows = summaryConfig;
+        } else {
+            const typeMap = {
+                'income_statement': 'income_statement',
+                'balance_sheet': 'balance_sheet',
+                'cash_flow': 'cash_flow'
+            };
+            let targetType = typeMap[subTab];
+            
+            let structureData = fin_data.filter(d => 
+                displayPeriods.includes(d.period) && 
+                d.statement_type.startsWith(targetType)
+            );
+
+            const uniqueLabels = new Map();
+            structureData.forEach(item => {
+                if (!uniqueLabels.has(item.label)) {
+                    uniqueLabels.set(item.label, { 
+                        label: item.label, 
+                        depth: item.depth,
+                        is_total: item.is_total,
+                        order: item.order !== undefined ? item.order : 9999,
+                        search: item.label 
+                    });
+                }
+            });
+            
+            rows = Array.from(uniqueLabels.values());
+            rows.sort((a, b) => a.order - b.order);
+        }
+
+        // Apply Row Configuration
+        if (fin_rowConfig.length > 0) {
+            const configMap = new Map(fin_rowConfig.map(c => [c.id, c]));
+            rows = rows.filter(r => {
+                const conf = configMap.get(r.label);
+                return conf ? conf.visible : true;
+            });
+            rows.sort((a, b) => {
+                const cA = configMap.get(a.label);
+                const cB = configMap.get(b.label);
+                const orderA = cA ? cA.customOrder : (a.order || 9999);
+                const orderB = cB ? cB.customOrder : (b.order || 9999);
+                return orderA - orderB;
+            });
+        }
+
+        // Build Table Data Matrix
+        const matrix = rows.map(row => {
+            if(row.isHeader) return { ...row, isHeader: true };
+            
+            const rowValues = displayPeriods.map(p => {
+                let val = null;
+                
+                if (row.calc === 'growth') {
+                    val = fin_getGrowth(fin_data, p, row.target);
+                } else if (row.calc === 'ratio') {
+                    const n = findValue(fin_data, p, row.num);
+                    const d = findValue(fin_data, p, row.den);
+                    if(n !== null && d !== null && d !== 0) val = (n/d) * 100;
+                } else if (row.calc === 'fcf') {
+                    const ocf = findValue(fin_data, p, 'Operating Cash Flow');
+                    const capex = findValue(fin_data, p, 'Capital Expenditure');
+                    if(ocf !== null && capex !== null) val = ocf + capex;
+                } else {
+                    val = findValue(fin_data, p, row.search);
+                }
+                return val;
+            });
+
+            return { ...row, values: rowValues };
+        });
+
+        return { periods: displayPeriods, rows: matrix };
+    }
+
+    function findValue(data, period, label) {
+        const item = data.find(d => d.period === period && d.label === label);
+        return item ? item.value : null;
+    }
+
+    function fin_renderTable() {
+        const result = fin_processData(fin_activeSubTab);
+        const container = document.getElementById('fin-table-container');
+
+        if(result.periods.length === 0) {
+             container.innerHTML = '<div class="p-8 text-center text-gray-500">No periods selected.</div>';
+             return;
+        }
+
+        const formatHeader = (p) => {
+            const parts = p.split(' ');
+            const yr = parts[1].slice(2);
+            if(parts[0].startsWith('Q')) return `${parts[0].charAt(1)}Q${yr}`;
+            if(parts[0] === 'FY') return `FY${yr}`;
+            return p;
+        };
+
+        let html = `
+            <table class="w-full text-sm border-collapse table-fixed" id="financials-data-table">
+        <thead>
+            <tr class="bg-gray-100 text-gray-600 sticky top-0 z-10 shadow-sm">
+                <th class="p-2 border-b border-r text-left fin-label-col" style="width: 280px;">
+                    Items
+                    <div class="resizer" onmousedown="fin_initResize(event, this)"></div>
+                </th>
+                        ${result.periods.map(p => `
+    <th class="p-2 border-b border-r text-right min-w-[100px] relative">
+        ${formatHeader(p)}
+        <div class="resizer" onmousedown="fin_initResize(event, this)"></div>
+    </th>
+`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        result.rows.forEach(row => {
+            if (row.isHeader) {
+                html += `
+                    <tr class="bg-gray-200 font-bold text-gray-800">
+                        <td class="p-2 border-b border-r" colspan="${result.periods.length + 1}">${row.label}</td>
+                    </tr>
+                `;
+            } else {
+                // Modified styling logic based on depth and is_total
+                // Depth 0: Abstract Headers -> Blue, Bold, Light Gray BG
+                // Depth 1 or Total: Black, Bold, Indent 4 chars (pl-8 approx)
+                // Depth 2: Black, Indent 8 chars (pl-16)
+                // Depth 3: Gray, Indent 12 chars (pl-24)
+                
+                const dVal = parseInt(row.depth);
+                let rowClass = 'hover:bg-blue-50 transition-colors group';
+                let cellClass = 'py-2 pr-2 border-b border-r fin-label-col relative';
+                let labelStyle = '';
+                
+                // Handle Empty Row Check
+                const isAllNull = row.values.every(v => v === null);
+                if (isAllNull) rowClass = 'bg-gray-50'; // Lightest gray for empty rows
+
+                if (dVal === 0) {
+                    rowClass = 'bg-gray-100'; // Override hover for Abstract
+                    cellClass += ' font-bold text-blue-800 pl-2';
+                } else if (dVal === 1 || (row.is_total && row.is_total !== 'False')) {
+                    cellClass += ' font-bold text-black depth-1'; 
+                } else if (dVal === 2) {
+                    cellClass += ' text-black depth-2';
+                } else if (dVal >= 3) {
+                    cellClass += ' text-gray-500 depth-3';
+                }
+
+                const cells = row.values.map(v => {
+    // 1. 空值：加入 border-r
+    if (v === null) return '<td class="p-2 border-b border-r text-right text-gray-300"></td>';
+    
+    let formatted = '';
+    if (row.isRatio) {
+        formatted = formatNumber(v, 1) + '%';
+    } else if (row.isEPS) {
+        formatted = formatNumber(v, 2);
+    } else {
+        formatted = formatNumber(v / 1e6, 0);
+    }
+    const colorClass = v < 0 ? 'text-red-600' : 'text-gray-700';
+
+    // 2. 一般數值：加入 border-r
+    return `<td class="p-2 border-b border-r text-right ${colorClass}">${formatted}</td>`;
+}).join('');
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="${cellClass}" title="${row.label}">
+                            ${row.label}
+                        </td>
+                        ${cells}
+                    </tr>
+                `;
+            }
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+    
+    // --- Resize Logic ---
+    let startX, startWidth, resizableCol;
+
+    function fin_initResize(e, resizer) {
+        e.preventDefault(); // Prevent default text selection
+        resizableCol = resizer.parentElement;
+        startX = e.pageX;
+        startWidth = resizableCol.offsetWidth;
+        
+        document.addEventListener('mousemove', fin_doResize);
+        document.addEventListener('mouseup', fin_stopResize);
+        document.body.style.cursor = 'col-resize';
+    }
+
+    function fin_doResize(e) {
+        if(resizableCol) {
+            const width = startWidth + (e.pageX - startX);
+            if (width > 50) { // Min width constraint
+                resizableCol.style.width = width + 'px';
+                resizableCol.style.minWidth = width + 'px'; // Ensure min-width reflects resizing
+            }
+        }
+    }
+
+    function fin_stopResize() {
+        resizableCol = null;
+        document.removeEventListener('mousemove', fin_doResize);
+        document.removeEventListener('mouseup', fin_stopResize);
+        document.body.style.cursor = '';
+    }
+    
+    // --- Row Config Logic ---
+    function fin_openRowConfig() {
+        const result = fin_processData(fin_activeSubTab); // Get current full row set
+        const listContainer = document.getElementById('fin-row-config-list');
+        listContainer.innerHTML = '';
+        
+        // Populate current config state or initialize
+        result.rows.forEach((row, idx) => {
+            // Check visibility state from current fin_rowConfig if exists
+            let isVisible = true;
+            const existingConf = fin_rowConfig.find(c => c.id === row.label);
+            if (existingConf) isVisible = existingConf.visible;
+            
+            listContainer.innerHTML += `
+                <div class="flex items-center gap-2 p-1 border-b" data-label="${row.label}">
+                    <input type="checkbox" class="fin-row-cb" ${isVisible ? 'checked' : ''}>
+                    <span class="flex-1 text-sm truncate" title="${row.label}">${row.label}</span>
+                    <span class="material-icons cursor-pointer text-gray-400 text-sm hover:text-black" onclick="fin_moveRowRow(this, -1)">arrow_upward</span>
+                    <span class="material-icons cursor-pointer text-gray-400 text-sm hover:text-black" onclick="fin_moveRowRow(this, 1)">arrow_downward</span>
+                </div>
+            `;
+        });
+        
+        document.getElementById('fin-row-config-modal').style.display = 'flex';
+    }
+    
+    function fin_moveRowRow(el, dir) {
+        const item = el.parentElement;
+        const container = item.parentElement;
+        if (dir === -1 && item.previousElementSibling) {
+            container.insertBefore(item, item.previousElementSibling);
+        } else if (dir === 1 && item.nextElementSibling) {
+            container.insertBefore(item.nextElementSibling, item);
+        }
+    }
+    
+    function fin_applyRowConfig() {
+        const items = document.querySelectorAll('#fin-row-config-list > div');
+        const newConfig = [];
+        items.forEach((div, index) => {
+            const label = div.dataset.label;
+            const visible = div.querySelector('.fin-row-cb').checked;
+            newConfig.push({ id: label, visible: visible, customOrder: index });
+        });
+        
+        fin_rowConfig = newConfig;
+        document.getElementById('fin-row-config-modal').style.display = 'none';
+        fin_renderTable();
+    }
+    
+    function fin_closeRowConfig(e) {
+        if (!e || e.target.id === 'fin-row-config-modal' || e.target.closest('.btn-ghost')) {
+            document.getElementById('fin-row-config-modal').style.display = 'none';
+        }
+    }
+    
+    function fin_copyTable() {
+         const table = document.getElementById('financials-data-table');
+         if(!table) return;
+         
+         let text = "";
+         // Headers
+         const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
+         text += headers.join('\t') + '\n';
+         
+         // Rows
+         const rows = Array.from(table.querySelectorAll('tbody tr'));
+         rows.forEach(tr => {
+             const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+             text += cells.join('\t') + '\n';
+         });
+         
+         navigator.clipboard.writeText(text).then(() => alert("Financials table copied!"));
+    }
+    
+    function fin_printTable() {
+        window.print();
     }
 
 </script>
