@@ -713,12 +713,11 @@
         
         /* Financial Label Column (Fixed/Resizable via JS, min/max managed inline) */
         .fin-label-col {
-    		/* min-width: 250px;  <-- 刪除這行 */
-    		white-space: nowrap;
-    		overflow: hidden;
+    		min-width: 280px;
+			white-space: nowrap;
+			overflow: hidden;
     		text-overflow: ellipsis;
-    		position: relative;
-    		max-width: 1px; /* 技巧：給一個極小的 max-width，強迫瀏覽器在固定佈局下執行截斷 */
+			position: relative;
 		}
 
         /* Multi Select Dropdown Style for Financials */
@@ -774,7 +773,12 @@
         .news-item:hover { background: #f3f4f6; }
         .news-item.active { background: #eff6ff; border-left: 4px solid var(--accent-blue); }
         .news-meta { display: flex; gap: 8px; font-size: 0.75rem; color: #6b7280; margin-bottom: 4px; align-items: center; }
-        .news-tag { background: #e5e7eb; padding: 2px 6px; border-radius: 4px; }
+        .news-tag {
+			padding: 2px 6px;
+			border-radius: 4px;
+			font-weight: 600;
+			color: white;
+		}
         .news-title { font-weight: 600; font-size: 0.9rem; line-height: 1.4; color: #374151; }
         
         /* Utils */
@@ -3538,9 +3542,9 @@
         if(filtered.length === 0) listEl.innerHTML = '<p class="p-4">No news found.</p>';
         else {
             listEl.innerHTML = filtered.slice(0, 100).map((n, i) => `
-                <div class="news-item" onclick="mkt_showNewsContent(mkt_fullNews.find(x => x.id === '${n.id}'))"> 
+                <div class="news-item" onclick="mkt_showNewsContent(mkt_fullNews.find(x => x.id === '${n.id}'))">
                     <div class="news-meta">
-                         <span class="news-tag">${n.ticker}</span>
+                         <span class="news-tag" style="background:${mkt_colors[n.ticker] || '#6b7280'};">${n.ticker}</span>
                          <span>${n.Date}</span>
                          <span class="ml-auto">${n.Source || ''}</span>
                     </div>
@@ -3943,7 +3947,7 @@
             <table class="w-full text-sm border-collapse table-fixed" id="financials-data-table">
         <thead>
             <tr class="bg-gray-100 text-gray-600 sticky top-0 z-10 shadow-sm">
-                <th class="p-2 border-b border-r text-left fin-label-col" style="width: 280px;">
+                <th class="p-2 border-b border-r text-left fin-label-col" style="min-width: 280px; width: auto;">
                     Items
                     <div class="resizer" onmousedown="fin_initResize(event, this)"></div>
                 </th>
