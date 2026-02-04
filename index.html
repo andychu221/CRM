@@ -953,6 +953,10 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="paper-field-row">
+                                        <div class="paper-label">Reason</div>
+                                        <div class="paper-value"><input type="text" id="frm-type-reason" placeholder="Reason for selection"></div>
+                                    </div>
                                     <div class="paper-field-row hidden" id="shared-entity-row">
                                         <div class="paper-label">Shared Entities</div>
                                         <div class="paper-value"><input type="text" id="frm-shared-tickers" placeholder="e.g. AAPL, GOOGL"></div>
@@ -1145,15 +1149,15 @@
                                                     <div class="mcap-container">
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">Current</span>
-                                                            <input type="text" id="mcap-curr" class="text-center font-bold text-xs bg-transparent w-full" value="">
+                                                            <div id="mcap-curr" class="text-center text-xs leading-tight min-h-[30px] flex flex-col justify-center"></div>
                                                         </div>
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">High</span>
-                                                            <input type="text" id="mcap-high" class="text-center font-bold text-xs bg-transparent w-full" value="">
+                                                            <div id="mcap-high" class="text-center text-xs leading-tight min-h-[30px] flex flex-col justify-center"></div>
                                                         </div>
                                                         <div class="mcap-cell" style="flex: 1;">
                                                             <span class="mcap-label">Low</span>
-                                                            <input type="text" id="mcap-low" class="text-center font-bold text-xs bg-transparent w-full" value="">
+                                                            <div id="mcap-low" class="text-center text-xs leading-tight min-h-[30px] flex flex-col justify-center"></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1163,7 +1167,10 @@
                                 </div>
 
                                 <div class="paper-section" id="risk-analysis-block">
-                                    <div class="paper-section-header">Key Risks Analysis</div>
+                                    <div class="paper-section-header flex items-center">
+                                        <span>Key Risks Analysis</span>
+                                        <input type="text" id="rev-risk-subtitle" class="text-xs text-gray-500 bg-transparent border-none ml-4 w-64 focus:outline-none" placeholder="financials as of FYXX ended MM/DD/2025">
+                                    </div>
                                     <div class="paper-grid-2">
                                         <div class="paper-col" style="border-right:1px solid #d1d5db;">
                                             <div class="p-2 font-bold underline text-xs text-gray-500">Major Credit Risks</div>
@@ -2247,9 +2254,18 @@
         
         toggleInputs('pane-req-form', canEditReqForm);
         toggleInputs('pane-review-form', canEditReviewForm);
+
+        if(currentUser.role === 'Reviewer' && isAtMyStep(req)) {
+             document.getElementById('frm-purpose').disabled = false;
+             document.getElementById('frm-type-reason').readOnly = false;
+        }
+
+        document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || '';
+        document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
         
         const pSelectForm = document.getElementById('frm-purpose');
         pSelectForm.value = req.purpose || 'New Credit Line';
+        document.getElementById('frm-type-reason').value = req.typeReason || '';
 
         // Reviewer Purpose Editor - Logic: Use Reviewer's saved value OR construct from Maker's
         // This ensures if Reviewer edits it, it persists. If not, it shows Maker's + default text.
@@ -2280,8 +2296,6 @@
             document.getElementById(id).readOnly = !canEditReviewForm;
         });
 
-        const mcapInputs = document.querySelectorAll('.mcap-container input');
-        mcapInputs.forEach(i => i.readOnly = !canEditReviewForm);
 
         const setQuill = (quill, wrapperId, editable) => {
             quill.enable(editable);
@@ -3144,6 +3158,7 @@
         const newReq = {
             id: newId, ticker: '', name: '', status: 'Draft', stepIndex: 0,
             currLimit: 0, propLimit: 0, purpose: 'New Credit Line', date: new Date().toISOString().split('T')[0],
+            typeReason: '', riskAnalysisSubtitle: '',
             forecast: '', bizDesc: '', risks: '', mitigants: '', recommendation: '', summary: '', files: [],
             finConfig: null,
             finPeriods: [],
@@ -3170,6 +3185,7 @@
                  
                  // Bug Fix 1: Strictly set purpose from dropdown value only
                  req.purpose = document.getElementById('frm-purpose').value;
+                 req.typeReason = document.getElementById('frm-type-reason').value;
                  
                  if(req.purpose === 'Add New Entity to Share') {
                      req.sharedTickers = document.getElementById('frm-shared-tickers').value;
@@ -3192,6 +3208,10 @@
                  // Do NOT overwrite req.purpose
                  req.revPurposeVal = quillPurpose.root.innerHTML;
                  
+                 req.purpose = document.getElementById('frm-purpose').value;
+                 req.typeReason = document.getElementById('frm-type-reason').value;
+                 req.riskAnalysisSubtitle = document.getElementById('rev-risk-subtitle').value;
+
                  req.summary = quillSummary.root.innerHTML; 
                  req.revPreparedBy = document.getElementById('rev-prepared-by').value;
                  
@@ -3762,35 +3782,45 @@
         let priceOnDate = 0;
         
         const sorted = histData.sort((a,b) => a.date - b.date);
+        let dateOfPrice = null;
+
         for(let i=sorted.length-1; i>=0; i--) {
             if(sorted[i].date.getTime() <= targetTime) {
                 priceOnDate = sorted[i].price;
+                dateOfPrice = sorted[i].date;
                 break;
             }
         }
         
         if(!priceOnDate) return;
         
+        const fmtDate = (d) => `(${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()})`;
+
         // Point 2: Market Cap in B (and thousand separator)
         let mcapValue = (priceOnDate * shares / 1e9);
         let mcapFormatted = mcapValue.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B'; 
         
-        document.getElementById('mcap-curr').value = '$' + mcapFormatted;
+        document.getElementById('mcap-curr').innerHTML = `<div class="font-bold">$${mcapFormatted}</div><div class="text-[10px] text-gray-500">${fmtDate(dateOfPrice)}</div>`;
         
         const lookbackDate = new Date(targetDate);
         lookbackDate.setDate(lookbackDate.getDate() - 250);
         
         const rangeData = sorted.filter(p => p.date >= lookbackDate && p.date <= targetDate);
         if(rangeData.length > 0) {
-            const prices = rangeData.map(p => p.price);
-            const maxP = Math.max(...prices);
-            const minP = Math.min(...prices);
+            // Find max/min and their dates
+            let maxP = -Infinity, minP = Infinity;
+            let maxD = null, minD = null;
+
+            rangeData.forEach(p => {
+                if(p.price > maxP) { maxP = p.price; maxD = p.date; }
+                if(p.price < minP) { minP = p.price; minD = p.date; }
+            });
             
             let highMcap = (maxP * shares / 1e9).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B';
             let lowMcap = (minP * shares / 1e9).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'B';
             
-            document.getElementById('mcap-high').value = '$' + highMcap;
-            document.getElementById('mcap-low').value = '$' + lowMcap;
+            document.getElementById('mcap-high').innerHTML = `<div class="font-bold">$${highMcap}</div><div class="text-[10px] text-gray-500">${fmtDate(maxD)}</div>`;
+            document.getElementById('mcap-low').innerHTML = `<div class="font-bold">$${lowMcap}</div><div class="text-[10px] text-gray-500">${fmtDate(minD)}</div>`;
         }
     }
 
