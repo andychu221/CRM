@@ -1163,14 +1163,18 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-2 px-1">
+                                    <input type="text" id="rev-risk-subtitle" 
+                                           class="text-sm text-black bg-transparent border-none w-full max-w-md focus:outline-none font-normal" 
+                                           placeholder="Financials as of FYXX ended MM/DD/2025">
                                 </div>
 								
                                 <div class="paper-section" id="risk-analysis-block">
                                     <div class="paper-section-header">Key Risks Analysis</div>
-									<div class="px-3 py-2 bg-white border-b border-gray-200">
-                                        <input type="text" id="rev-risk-subtitle" class="text-sm text-black bg-transparent border-none w-full focus:outline-none font-normal" placeholder="financials as of FYXX ended MM/DD/2025">
-                                    </div>
+									
                                     <div class="paper-grid-2">
                                         <div class="paper-col" style="border-right:1px solid #d1d5db;">
                                             <div class="p-2 font-bold underline text-xs text-gray-500">Major Credit Risks</div>
@@ -2261,7 +2265,7 @@
 			 document.getElementById('frm-shared-tickers').readOnly = false;
 			 document.getElementById('frm-shared-purpose').readOnly = false;
         }
-		document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || '';
+		document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || 'Financials as of FYXX ended MM/DD/YYYY';
         document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
         
         const pSelectForm = document.getElementById('frm-purpose');
