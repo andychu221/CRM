@@ -1163,10 +1163,10 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div
                                 </div>
 								<div style="padding: 4px 12px; border-bottom: 1px solid #e5e7eb; background-color: #fff;">
-									<input type="text" id="rev-risk-subtitle" class="text-xs text-gray-500 bg-transparent border-none w-full focus:outline-none" placeholder="financials as of FYXX ended MM/DD/2025">
+									<input type="text" id="rev-risk-subtitle" class="text-sm text-black bg-transparent border-none w-full focus:outline-none mt-1" style="font-weight: normal;" placeholder="financials as of FYXX ended MM/DD/2025">
 								</div>
                                 <div class="paper-section" id="risk-analysis-block">
                                     <div class="paper-section-header">Key Risks Analysis</div>
@@ -2258,6 +2258,8 @@
         if(currentUser.role === 'Reviewer' && isAtMyStep(req)) {
              document.getElementById('frm-purpose').disabled = false;
              document.getElementById('frm-type-reason').readOnly = false;
+			 document.getElementById('frm-shared-tickers').readOnly = false;
+			 document.getElementById('frm-shared-purpose').readOnly = false;
         }
 		document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || '';
         document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
@@ -3207,6 +3209,9 @@
                  req.revPurposeVal = quillPurpose.root.innerHTML;
                  req.purpose = document.getElementById('frm-purpose').value;
                  req.typeReason = document.getElementById('frm-type-reason').value;
+				 req.sharedTickers = document.getElementById('frm-shared-tickers').value;
+                 req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
+              
                  req.riskAnalysisSubtitle = document.getElementById('rev-risk-subtitle').value;
 
                  req.summary = quillSummary.root.innerHTML; 
