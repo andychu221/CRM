@@ -1169,7 +1169,7 @@
                                 <div class="paper-section" id="risk-analysis-block">
                                     <div class="paper-section-header">
                                         <div>Key Risks Analysis</div>
-                                        <input type="text" id="rev-risk-subtitle" class="text-xs text-gray-500 bg-transparent border-none w-full focus:outline-none mt-1" style="font-weight: normal;" placeholder="financials as of FYXX ended MM/DD/2025">
+                                        <input type="text" id="rev-risk-subtitle" class="text-sm text-black bg-transparent border-none w-full focus:outline-none mt-1" style="font-weight: normal;" placeholder="financials as of FYXX ended MM/DD/2025">
                                     </div>
                                     <div class="paper-grid-2">
                                         <div class="paper-col" style="border-right:1px solid #d1d5db;">
@@ -2258,9 +2258,11 @@
         if(currentUser.role === 'Reviewer' && isAtMyStep(req)) {
              document.getElementById('frm-purpose').disabled = false;
              document.getElementById('frm-type-reason').readOnly = false;
+             document.getElementById('frm-shared-tickers').readOnly = false;
+             document.getElementById('frm-shared-purpose').readOnly = false;
         }
 
-        document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || '';
+        document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || 'financials as of FYXX ended MM/DD/YYYY';
         document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
         
         const pSelectForm = document.getElementById('frm-purpose');
@@ -3210,6 +3212,8 @@
                  
                  req.purpose = document.getElementById('frm-purpose').value;
                  req.typeReason = document.getElementById('frm-type-reason').value;
+                 req.sharedTickers = document.getElementById('frm-shared-tickers').value;
+                 req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
                  req.riskAnalysisSubtitle = document.getElementById('rev-risk-subtitle').value;
 
                  req.summary = quillSummary.root.innerHTML; 
