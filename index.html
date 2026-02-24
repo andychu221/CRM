@@ -945,12 +945,27 @@
                                     <div class="paper-field-row">
                                         <div class="paper-label">Type</div>
                                         <div class="paper-value">
-                                            <select id="frm-purpose" onchange="handlePurposeChange()">
-                                                <option value="New Credit Line">New Credit Line</option>
-                                                <option value="Credit Line Change">Credit Line Change</option>
-                                                <option value="Payment Term Change">Payment Term Change</option>
-                                                <option value="Add New Entity to Share">Add New Entity to Share</option>
-                                            </select>
+                                            <div class="multi-select-dropdown w-full" id="purpose-selector" onclick="event.stopPropagation()">
+                                                <button class="dropdown-btn w-full" id="btn-purpose-dropdown" onclick="togglePurposeDropdown()">
+                                                    <span id="purpose-display" class="truncate">Select Purpose</span>
+                                                    <span class="material-icons text-sm">arrow_drop_down</span>
+                                                </button>
+                                                <div class="dropdown-content w-full flex-col" id="purpose-dropdown-content">
+                                                     <div class="dropdown-item-check" onclick="togglePurpose('New Credit Line', this)">
+                                                        <span class="material-icons text-sm">check_box_outline_blank</span> New Credit Line
+                                                     </div>
+                                                     <div class="dropdown-item-check" onclick="togglePurpose('Credit Line Change', this)">
+                                                        <span class="material-icons text-sm">check_box_outline_blank</span> Credit Line Change
+                                                     </div>
+                                                     <div class="dropdown-item-check" onclick="togglePurpose('Payment Term Change', this)">
+                                                        <span class="material-icons text-sm">check_box_outline_blank</span> Payment Term Change
+                                                     </div>
+                                                     <div class="dropdown-item-check" onclick="togglePurpose('Add New Entity to Share', this)">
+                                                        <span class="material-icons text-sm">check_box_outline_blank</span> Add New Entity to Share
+                                                     </div>
+                                                </div>
+                                            </div>
+                                            <input type="hidden" id="frm-purpose">
                                         </div>
                                     </div>
 									<div class="paper-field-row">
@@ -1788,6 +1803,11 @@
             if (!event.target.closest('#fin-period-selector')) {
                 document.getElementById('fin-period-dropdown-content').classList.remove('show');
             }
+
+            // Purpose Dropdown
+             if (!event.target.closest('#purpose-selector')) {
+                document.getElementById('purpose-dropdown-content').classList.remove('show');
+            }
         }
     });
 
@@ -2205,7 +2225,8 @@
         
         
         // Manual toggle of visibility without calling handlePurposeChange() to preserve values
-        if(req.purpose === 'Add New Entity to Share') {
+        const purposeCheck = req.purpose || '';
+        if(purposeCheck.includes('Add New Entity to Share')) {
             document.getElementById('shared-entity-row').classList.remove('hidden');
             document.getElementById('shared-purpose-row').classList.remove('hidden');
         } else {
@@ -2260,7 +2281,11 @@
         toggleInputs('pane-review-form', canEditReviewForm);
 		
         if(currentUser.role === 'Reviewer' && isAtMyStep(req)) {
-             document.getElementById('frm-purpose').disabled = false;
+             const btn = document.getElementById('btn-purpose-dropdown');
+             if(btn) {
+                 btn.disabled = false;
+                 btn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+             }
              document.getElementById('frm-type-reason').readOnly = false;
 			 document.getElementById('frm-shared-tickers').readOnly = false;
 			 document.getElementById('frm-shared-purpose').readOnly = false;
@@ -2268,8 +2293,28 @@
 		document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || 'Financials as of FYXX ended MM/DD/YYYY';
         document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
         
-        const pSelectForm = document.getElementById('frm-purpose');
-        pSelectForm.value = req.purpose || 'New Credit Line';
+        const savedPurpose = req.purpose || 'New Credit Line';
+        const selectedPurposes = savedPurpose.split(', ');
+
+        const purposeItems = document.querySelectorAll('#purpose-dropdown-content .dropdown-item-check');
+        purposeItems.forEach(item => {
+            const text = item.innerText.trim();
+            if (selectedPurposes.includes(text)) {
+                item.querySelector('.material-icons').innerText = 'check_box';
+                item.classList.add('text-blue-600', 'font-medium', 'bg-blue-50');
+            } else {
+                item.querySelector('.material-icons').innerText = 'check_box_outline_blank';
+                item.classList.remove('text-blue-600', 'font-medium', 'bg-blue-50');
+            }
+        });
+
+        document.getElementById('frm-purpose').value = savedPurpose;
+
+        const pDisplay = document.getElementById('purpose-display');
+        if (selectedPurposes.length === 0) pDisplay.innerText = 'Select Purpose';
+        else if (selectedPurposes.length === 1) pDisplay.innerText = selectedPurposes[0];
+        else pDisplay.innerText = `${selectedPurposes.length} Purposes Selected`;
+
 		document.getElementById('frm-type-reason').value = req.typeReason || '';
 
         // Reviewer Purpose Editor - Logic: Use Reviewer's saved value OR construct from Maker's
@@ -2290,7 +2335,7 @@
         document.getElementById('req-prepared-by').value = req.reqPreparedBy || 'Tim Cook';
         document.getElementById('rev-prepared-by').value = req.revPreparedBy || 'Jensen Huang';
 
-        if (canEditReqForm && req.purpose === 'New Credit Line') {
+        if (canEditReqForm && (req.purpose && req.purpose.includes('New Credit Line'))) {
              document.getElementById('frm-curr-limit').readOnly = true;
         }
         
@@ -2479,6 +2524,13 @@
             inp.readOnly = !enable;
             if(inp.tagName === 'SELECT') inp.disabled = !enable;
         });
+
+        const dropdownBtns = container.querySelectorAll('.multi-select-dropdown .dropdown-btn');
+        dropdownBtns.forEach(btn => {
+            btn.disabled = !enable;
+            if(!enable) btn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+            else btn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+        });
     }
 
     function openExpandedEditor(wrapperId) {
@@ -2521,6 +2573,44 @@
         }
     }
 
+    function togglePurposeDropdown() {
+        const btn = document.getElementById('btn-purpose-dropdown');
+        if(!btn.disabled) {
+             document.getElementById('purpose-dropdown-content').classList.toggle('show');
+        }
+    }
+
+    function togglePurpose(value, element) {
+        // Prevent toggle if disabled (though click shouldn't reach here if dropdown hidden, but safety check)
+        const btn = document.getElementById('btn-purpose-dropdown');
+        if(btn.disabled) return;
+
+        let currentVal = document.getElementById('frm-purpose').value;
+        let selected = currentVal ? currentVal.split(', ') : [];
+
+        if (selected.includes(value)) {
+            selected = selected.filter(v => v !== value);
+            element.querySelector('.material-icons').innerText = 'check_box_outline_blank';
+            element.classList.remove('text-blue-600', 'font-medium', 'bg-blue-50');
+        } else {
+            selected.push(value);
+            element.querySelector('.material-icons').innerText = 'check_box';
+            element.classList.add('text-blue-600', 'font-medium', 'bg-blue-50');
+        }
+
+        // Update Hidden Input
+        document.getElementById('frm-purpose').value = selected.join(', ');
+
+        // Update Button Text
+        const display = document.getElementById('purpose-display');
+        if (selected.length === 0) display.innerText = 'Select Purpose';
+        else if (selected.length === 1) display.innerText = selected[0];
+        else display.innerText = `${selected.length} Purposes Selected`;
+
+        // Trigger Change Logic
+        handlePurposeChange();
+    }
+
     function autoAdjustWorkflow(req) {
         const limit = parseInt(req.propLimit) || 0;
         const requiredRule = APPROVAL_MATRIX.find(r => limit >= r.limit) || APPROVAL_MATRIX[APPROVAL_MATRIX.length-1];
@@ -2550,7 +2640,9 @@
     }
 
     function handlePurposeChange() {
-        const val = document.getElementById('frm-purpose').value;
+        const valStr = document.getElementById('frm-purpose').value;
+        const selected = valStr ? valStr.split(', ') : [];
+
         const req = requests.find(r => r.id === currentReqId);
         const isEdit = currentUser.role === 'Maker' && (req.status === 'Draft' || req.status === 'Returned' || req.status === 'Recalled');
 
@@ -2558,11 +2650,11 @@
             const ticker = document.getElementById('frm-ticker').value;
             const cust = CUSTOMER_DB[ticker];
             
-            if(val === 'New Credit Line') {
+            if(selected.includes('New Credit Line')) {
                 document.getElementById('frm-curr-limit').value = 0;
                 document.getElementById('frm-curr-limit').readOnly = true;
                 req.currLimit = 0;
-            } else if (val === 'Credit Line Change') {
+            } else if (selected.includes('Credit Line Change')) {
                 if(cust) {
                      document.getElementById('frm-curr-limit').value = cust.creditLine.toLocaleString();
                      req.currLimit = cust.creditLine;
@@ -2570,7 +2662,10 @@
                 document.getElementById('frm-curr-limit').readOnly = false;
             } else {
                 // Bug 3 Fix: Pre-fill and Default for others
-                if(cust) {
+                // Only if something is selected, or we default to maintenance mode?
+                // If nothing selected, we probably shouldn't overwrite unless we want a default state.
+                // Assuming "else" implies "Payment Term Change" or "Add New Entity" or empty (but usually one is selected).
+                if(cust && selected.length > 0) {
                      const limitStr = cust.creditLine.toLocaleString();
                      document.getElementById('frm-curr-limit').value = limitStr;
                      document.getElementById('frm-prop-limit').value = limitStr;
@@ -2582,7 +2677,7 @@
             handleLimitChange();
         }
 
-        if(val === 'Add New Entity to Share') {
+        if(selected.includes('Add New Entity to Share')) {
             document.getElementById('shared-entity-row').classList.remove('hidden');
             document.getElementById('shared-purpose-row').classList.remove('hidden');
         } else {
@@ -2608,12 +2703,13 @@
             
             // Bug 3 Fix: Apply same logic on ticker change
             const purpose = document.getElementById('frm-purpose').value;
-            if(purpose !== 'New Credit Line') {
+            if(!purpose.includes('New Credit Line')) {
                 const limitStr = cust.creditLine.toLocaleString();
                 document.getElementById('frm-curr-limit').value = limitStr;
                 
                 // Also default prop limit for these specific types
-                if (purpose === 'Add New Entity to Share' || purpose === 'Payment Term Change') {
+                // But logic is trickier with multi select. Assume if not New/Change line, we default prop limit.
+                if (!purpose.includes('Credit Line Change')) {
                     document.getElementById('frm-prop-limit').value = limitStr;
                 } else {
                     // For Credit Line Change, default to current
@@ -3191,7 +3287,7 @@
                  req.purpose = document.getElementById('frm-purpose').value;
                  req.typeReason = document.getElementById('frm-type-reason').value;
                  
-                 if(req.purpose === 'Add New Entity to Share') {
+                 if(req.purpose.includes('Add New Entity to Share')) {
                      req.sharedTickers = document.getElementById('frm-shared-tickers').value;
                      req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
                  }
