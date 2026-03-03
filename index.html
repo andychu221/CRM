@@ -504,7 +504,6 @@
             border: 1px solid #d1d5db;
             margin-bottom: 20px;
             border-radius: 4px;
-            overflow: hidden;
         }
         .paper-section-header {
             background: #f3f4f6;
@@ -514,6 +513,7 @@
             font-size: 0.9rem;
             color: #374151;
             text-transform: capitalize;
+            border-radius: 4px 4px 0 0;
         }
         
         .paper-grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
@@ -947,8 +947,8 @@
                                         <div class="paper-value">
                                             <div class="multi-select-dropdown w-full" id="purpose-selector" onclick="event.stopPropagation()">
                                                 <button class="dropdown-btn w-full" id="btn-purpose-dropdown" onclick="togglePurposeDropdown()">
-                                                    <span id="purpose-display" class="truncate">Select Purpose</span>
-                                                    <span class="material-icons text-sm">arrow_drop_down</span>
+                                                    <span id="purpose-display" class="truncate flex-1 text-left mr-2">Select Purpose</span>
+                                                    <span class="material-icons text-sm flex-shrink-0">arrow_drop_down</span>
                                                 </button>
                                                 <div class="dropdown-content w-full flex-col" id="purpose-dropdown-content">
                                                      <div class="dropdown-item-check" onclick="togglePurpose('New Credit Line', this)">
@@ -2311,8 +2311,7 @@
 
         const pDisplay = document.getElementById('purpose-display');
         if (selectedPurposes.length === 0) pDisplay.innerText = 'Select Purpose';
-        else if (selectedPurposes.length === 1) pDisplay.innerText = selectedPurposes[0];
-        else pDisplay.innerText = `${selectedPurposes.length} Purposes Selected`;
+        else pDisplay.innerText = selectedPurposes.join(', ');
 
 
 		document.getElementById('frm-type-reason').value = req.typeReason || '';
@@ -2604,8 +2603,7 @@
         // Update Button Text
         const display = document.getElementById('purpose-display');
         if (selected.length === 0) display.innerText = 'Select Purpose';
-        else if (selected.length === 1) display.innerText = selected[0];
-        else display.innerText = `${selected.length} Purposes Selected`;
+        else display.innerText = selected.join(', ');
         
         // Trigger Change Logic
         handlePurposeChange();
