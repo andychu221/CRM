@@ -946,9 +946,9 @@
                                         <div class="paper-label">Type</div>
                                         <div class="paper-value">
                                             <div class="multi-select-dropdown w-full" id="purpose-selector" onclick="event.stopPropagation()">
-                                                <button class="dropdown-btn w-full" id="btn-purpose-dropdown" onclick="togglePurposeDropdown()">
-                                                    <span id="purpose-display" class="truncate flex-1 text-left mr-2">Select Purpose</span>
-                                                    <span class="material-icons text-sm flex-shrink-0">arrow_drop_down</span>
+                                                <button class="dropdown-btn w-full flex items-start" id="btn-purpose-dropdown" onclick="togglePurposeDropdown()">
+                                                    <span id="purpose-display" class="break-words whitespace-normal self-start mt-1 flex-1 text-left mr-2">Select Purpose</span>
+                                                    <span class="material-icons text-sm self-start mt-1 flex-shrink-0">arrow_drop_down</span>
                                                 </button>
                                                 <div class="dropdown-content w-full flex-col" id="purpose-dropdown-content">
                                                      <div class="dropdown-item-check" onclick="togglePurpose('New Credit Line', this)">
@@ -963,6 +963,10 @@
                                                      <div class="dropdown-item-check" onclick="togglePurpose('Add New Entity to Share', this)">
                                                         <span class="material-icons text-sm">check_box_outline_blank</span> Add New Entity to Share
                                                      </div>
+                                                     <div class="dropdown-item-check" onclick="togglePurpose('Others', this)">
+                                                        <span class="material-icons text-sm">check_box_outline_blank</span> Others
+                                                     </div>
+                                                </div>
                                                 </div>
                                             </div>
                                             <input type="hidden" id="frm-purpose">
@@ -975,6 +979,10 @@
                                     <div class="paper-field-row hidden" id="shared-entity-row">
                                         <div class="paper-label">Shared Entities</div>
                                         <div class="paper-value"><input type="text" id="frm-shared-tickers" placeholder="e.g. AAPL, GOOGL"></div>
+                                    </div>
+                                                                        <div class="paper-field-row hidden" id="others-purpose-row">
+                                        <div class="paper-label">Others Purpose</div>
+                                        <div class="paper-value"><input type="text" id="frm-others-purpose" placeholder="Specify other purpose"></div>
                                     </div>
                                     <div class="paper-field-row hidden" id="shared-purpose-row">
                                         <div class="paper-label">Description</div>
@@ -1258,7 +1266,7 @@
                                         <div class="multi-select-dropdown" id="fin-period-selector" onclick="event.stopPropagation()">
                                             <button class="dropdown-btn" onclick="fin_togglePeriodDropdown()">
                                                 <span id="fin-period-label">Select Periods</span>
-                                                <span class="material-icons text-sm">arrow_drop_down</span>
+                                                <span class="material-icons text-sm self-start mt-1 flex-shrink-0">arrow_drop_down</span>
                                             </button>
                                             <div class="dropdown-content" id="fin-period-dropdown-content">
                                                 <div id="fin-period-list"></div>
@@ -2233,8 +2241,15 @@
             document.getElementById('shared-purpose-row').classList.add('hidden');
         }
         
+        if(purposeCheck.includes('Others')) {
+            document.getElementById('others-purpose-row').classList.remove('hidden');
+        } else {
+            document.getElementById('others-purpose-row').classList.add('hidden');
+        }
+
         if(req.sharedTickers) document.getElementById('frm-shared-tickers').value = req.sharedTickers;
         if(req.sharedPurpose) document.getElementById('frm-shared-purpose').value = req.sharedPurpose;
+        if(req.othersPurpose) document.getElementById('frm-others-purpose').value = req.othersPurpose;
 
         const ptSelect = document.getElementById('frm-payterm-select');
         const cust = CUSTOMER_DB[req.ticker];
@@ -2288,6 +2303,7 @@
              document.getElementById('frm-type-reason').readOnly = false;
 			 document.getElementById('frm-shared-tickers').readOnly = false;
 			 document.getElementById('frm-shared-purpose').readOnly = false;
+             document.getElementById('frm-others-purpose').readOnly = false;
         }
 		document.getElementById('rev-risk-subtitle').value = req.riskAnalysisSubtitle || 'Financials as of FYXX ended MM/DD/YYYY';
         document.getElementById('rev-risk-subtitle').readOnly = !canEditReviewForm;
@@ -2311,7 +2327,7 @@
 
         const pDisplay = document.getElementById('purpose-display');
         if (selectedPurposes.length === 0) pDisplay.innerText = 'Select Purpose';
-        else pDisplay.innerText = selectedPurposes.join(', ');
+        else pDisplay.innerHTML = selectedPurposes.join('<br>');
 
 
 		document.getElementById('frm-type-reason').value = req.typeReason || '';
@@ -2603,7 +2619,7 @@
         // Update Button Text
         const display = document.getElementById('purpose-display');
         if (selected.length === 0) display.innerText = 'Select Purpose';
-        else display.innerText = selected.join(', ');
+        else display.innerHTML = selected.join('<br>');
         
         // Trigger Change Logic
         handlePurposeChange();
@@ -2682,6 +2698,12 @@
         } else {
             document.getElementById('shared-entity-row').classList.add('hidden');
             document.getElementById('shared-purpose-row').classList.add('hidden');
+        }
+
+        if(selected.includes('Others')) {
+            document.getElementById('others-purpose-row').classList.remove('hidden');
+        } else {
+            document.getElementById('others-purpose-row').classList.add('hidden');
         }
     }
 
@@ -3291,6 +3313,10 @@
                      req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
                  }
                  
+                 if(req.purpose.includes('Others')) {
+                     req.othersPurpose = document.getElementById('frm-others-purpose').value;
+                 }
+
                  const ptVal = document.getElementById('frm-payterm-select').value;
                  req.paymentTerm = (ptVal === 'Others') ? document.getElementById('frm-payterm-other').value : ptVal;
 
@@ -3310,6 +3336,7 @@
                  req.typeReason = document.getElementById('frm-type-reason').value;
 				 req.sharedTickers = document.getElementById('frm-shared-tickers').value;
                  req.sharedPurpose = document.getElementById('frm-shared-purpose').value;
+                 req.othersPurpose = document.getElementById('frm-others-purpose').value;
               
                  req.riskAnalysisSubtitle = document.getElementById('rev-risk-subtitle').value;
 
