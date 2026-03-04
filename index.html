@@ -947,7 +947,7 @@
                                         <div class="paper-value">
                                             <div class="multi-select-dropdown w-full" id="purpose-selector" onclick="event.stopPropagation()">
                                                 <button class="dropdown-btn w-full" id="btn-purpose-dropdown" onclick="togglePurposeDropdown()">
-                                                    <span id="purpose-display" class="truncate flex-1 text-left mr-2">Select Purpose</span>
+                                                    <span id="purpose-display" class="break-words whitespace-normal self-start mt-1 flex-1 text-left mr-2truncate flex-1 text-left mr-2">Select Purpose</span>
                                                     <span class="material-icons text-sm flex-shrink-0">arrow_drop_down</span>
                                                 </button>
                                                 <div class="dropdown-content w-full flex-col" id="purpose-dropdown-content">
@@ -2311,7 +2311,7 @@
 
         const pDisplay = document.getElementById('purpose-display');
         if (selectedPurposes.length === 0) pDisplay.innerText = 'Select Purpose';
-        else pDisplay.innerText = selectedPurposes.join(', ');
+        else pDisplay.innerText = selectedPurposes.join('<br>');
 
 		document.getElementById('frm-type-reason').value = req.typeReason || '';
 
@@ -2602,7 +2602,7 @@
         // Update Button Text
         const display = document.getElementById('purpose-display');
         if (selected.length === 0) display.innerText = 'Select Purpose';
-        else display.innerText = selected.join(', ');
+        else display.innerText = selected.join('<br>');
         
         // Trigger Change Logic
         handlePurposeChange();
