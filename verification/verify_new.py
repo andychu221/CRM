@@ -9,16 +9,17 @@ def verify():
         page.goto(f"file://{pwd}/index.html")
         page.wait_for_timeout(1000)
 
-        # Click the new request card explicitly by force if needed
-        # We need to evaluate JS to click it reliably since it might be hidden or styled oddly
-        page.evaluate("createNewRequest()")
+        # Click the 'New Request' card
+        page.click("text=New Request")
         page.wait_for_timeout(500)
-        page.locator(".notebook-card").nth(1).click() # wait what, it just creates a draft card...
+
+        # Now click the new draft card that got created
+        page.click("text=REQ-2025-4")
         page.wait_for_timeout(1000)
 
         # Take a screenshot to verify empty new request behavior
-        page.screenshot(path="verification/verification_others_new.png")
-        print("Final screenshot saved to verification/verification_others_new.png")
+        page.screenshot(path="verification/verification_new_req_detail.png")
+        print("Final screenshot saved to verification/verification_new_req_detail.png")
 
         browser.close()
 
